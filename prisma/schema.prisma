@@ -1,0 +1,468 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+// ---------------- Generators & Datasource ----------------
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------- Enums ----------------
+enum BinaryStatus {
+  active
+  inactive
+}
+
+enum NotificationType {
+  info
+  warning
+  alert
+  task
+  project
+  system
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  canceled
+}
+
+enum PaymentMethod {
+  credit_card
+  bank_transfer
+  momo
+  zalo_pay
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+  refunded
+}
+
+enum ProjectStatus {
+  not_started
+  active
+  completed
+  inactive
+}
+
+enum TaskStatus {
+  todo
+  doing
+  reviewing
+  rejected
+  completed
+  overdued
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+}
+
+enum TaskContentType {
+  comment
+  note
+}
+
+enum TaskContentStatus {
+  active
+  inactive
+}
+
+enum UserStatus {
+  active
+  inactive
+}
+
+// ---------------- Models ----------------
+model SystemRole {
+  id         Int      @id @default(autoincrement())
+  role       String
+  created_at DateTime
+  updated_at DateTime
+
+  users User[]
+}
+
+model Package {
+  id         String       @id @default(uuid()) @db.Uuid
+  name       String // Free / Premium / Enterprise
+  price      Float
+  status     BinaryStatus
+  created_at DateTime
+  updated_at DateTime
+
+  workspaces Workspace[]
+  orders     Order[]
+}
+
+model Workspace {
+  id           String       @id @default(uuid()) @db.Uuid
+  name         String
+  company_code String
+  company_name String
+  status       BinaryStatus
+  package_id   String       @db.Uuid
+  start_date   DateTime
+  expire_date  DateTime
+  created_at   DateTime
+  updated_at   DateTime
+
+  package       Package        @relation(fields: [package_id], references: [id])
+  departments   Department[]
+  users         User[]
+  projects      Project[]
+  orders        Order[]
+  notifications Notification[] @relation("NotificationWorkspace")
+
+  @@index([package_id])
+}
+
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  workspace_id String      @db.Uuid
+  package_id   String      @db.Uuid
+  order_date   DateTime
+  status       OrderStatus
+  total_amount Float
+  created_at   DateTime
+  updated_at   DateTime
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id])
+  package   Package   @relation(fields: [package_id], references: [id])
+  payments  Payment[]
+
+  @@index([workspace_id])
+  @@index([package_id])
+}
+
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  order_id       String        @db.Uuid
+  payment_method PaymentMethod
+  payment_date   DateTime
+  amount         Float
+  status         PaymentStatus
+  transaction_id String
+  created_at     DateTime
+  updated_at     DateTime
+
+  order Order @relation(fields: [order_id], references: [id])
+
+  @@index([order_id])
+}
+
+model Department {
+  id           Int          @id @default(autoincrement())
+  name         String
+  description  String
+  workspace_id String       @db.Uuid
+  status       BinaryStatus
+  created_at   DateTime
+  updated_at   DateTime
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id])
+  users     User[]
+
+  @@index([workspace_id])
+}
+
+model User {
+  id                  String     @id @default(uuid()) @db.Uuid
+  name                String
+  email               String     @unique
+  password            String
+  avatar_url          String
+  status              UserStatus
+  role_id             Int
+  workspace_id        String     @db.Uuid
+  department_id       Int
+  is_first_login      Boolean    @default(true)
+  password_changed_at DateTime?
+  created_at          DateTime
+  updated_at          DateTime
+
+  role       SystemRole @relation(fields: [role_id], references: [id])
+  workspace  Workspace  @relation(fields: [workspace_id], references: [id])
+  department Department @relation(fields: [department_id], references: [id])
+
+  // Relations
+  refreshTokens       RefreshToken[]
+  microFeedbacks      MicroFeedback[]
+  performanceData     PerformanceData[]
+  overallPerformances OverallPerformance[]
+  dailyFocusLogs      DailyFocusLog[]
+  projectUsers        ProjectUser[]
+  taskUsers           TaskUser[]
+  taskReviews         TaskReview[]           @relation("ReviewerTaskReviews")
+  uploads             UploadFile[]
+  taskContents        TaskContent[]
+  rejectionHistories  TaskRejectionHistory[]
+  notifications       Notification[]
+
+  @@index([role_id])
+  @@index([workspace_id])
+  @@index([department_id])
+}
+
+model RefreshToken {
+  id          Int      @id @default(autoincrement())
+  token       String
+  device_info String
+  ip_address  String
+  user_id     String   @db.Uuid
+  expired_at  DateTime
+  created_at  DateTime
+  updated_at  DateTime
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+}
+
+model Notification {
+  id                   Int              @id @default(autoincrement())
+  user_id              String           @db.Uuid // người nhận thông báo
+  title                String
+  content              String
+  type                 NotificationType
+  is_read              Boolean          @default(false)
+  related_task_id      String?          @db.Uuid
+  related_project_id   String?          @db.Uuid
+  related_workspace_id String?          @db.Uuid
+  created_at           DateTime         @default(now())
+  updated_at           DateTime
+
+  user             User       @relation(fields: [user_id], references: [id])
+  relatedTask      Task?      @relation("NotificationTask", fields: [related_task_id], references: [id])
+  relatedProject   Project?   @relation("NotificationProject", fields: [related_project_id], references: [id])
+  relatedWorkspace Workspace? @relation("NotificationWorkspace", fields: [related_workspace_id], references: [id])
+
+  @@index([user_id])
+  @@index([related_task_id])
+  @@index([related_project_id])
+  @@index([related_workspace_id])
+}
+
+model MicroFeedback {
+  id         Int      @id @default(autoincrement())
+  user_id    String   @db.Uuid
+  rating     Int // 1–5
+  created_at DateTime
+  updated_at DateTime
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+}
+
+model PerformanceData {
+  id                Int      @id @default(autoincrement())
+  user_id           String   @db.Uuid
+  project_id        String   @db.Uuid
+  performance_cycle String
+  working_hours     Float
+  task_completed    Int
+  task_delay_count  Int
+  burnout_index     Float
+  quality_score     Float
+  feedback_score    Float
+  notes             String
+  created_at        DateTime
+  updated_at        DateTime
+
+  user    User    @relation(fields: [user_id], references: [id])
+  project Project @relation(fields: [project_id], references: [id])
+
+  @@index([user_id])
+  @@index([project_id])
+}
+
+model OverallPerformance {
+  id               Int      @id @default(autoincrement())
+  user_id          String   @db.Uuid
+  working_hours    Float
+  task_completed   Int
+  task_delay_count Int
+  burnout_index    Float
+  quality_score    Float
+  feedback_score   Float
+  notes            String
+  created_at       DateTime
+  updated_at       DateTime
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id])
+}
+
+model DailyFocusLog {
+  id              Int      @id @default(autoincrement())
+  user_id         String   @db.Uuid
+  date            DateTime @db.Date
+  focused_minutes Int
+  note            String
+  created_at      DateTime
+  updated_at      DateTime
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, date])
+}
+
+model Project {
+  id           String        @id @default(uuid()) @db.Uuid
+  workspace_id String        @db.Uuid
+  name         String
+  description  String
+  status       ProjectStatus
+  start_date   DateTime
+  end_date     DateTime
+  process      Int
+  team_size    Int
+  created_at   DateTime
+  updated_at   DateTime
+
+  workspace     Workspace         @relation(fields: [workspace_id], references: [id])
+  tasks         Task[]
+  members       ProjectUser[]
+  notifications Notification[]    @relation("NotificationProject")
+  performance   PerformanceData[]
+
+  @@index([workspace_id])
+}
+
+model ProjectUser {
+  id         Int     @id @default(autoincrement())
+  project_id String  @db.Uuid
+  user_id    String  @db.Uuid
+  role       String?
+
+  project Project @relation(fields: [project_id], references: [id])
+  user    User    @relation(fields: [user_id], references: [id])
+
+  @@unique([project_id, user_id])
+  @@index([user_id])
+}
+
+model Task {
+  id                    String       @id @default(uuid()) @db.Uuid
+  project_id            String       @db.Uuid
+  name                  String
+  description           String
+  status                TaskStatus
+  priority              TaskPriority
+  time_spent_in_minutes Int
+  start_at              DateTime
+  completed_at          DateTime?
+  start_date            DateTime
+  due_date              DateTime
+  created_at            DateTime
+  updated_at            DateTime
+
+  project       Project                @relation(fields: [project_id], references: [id])
+  assignees     TaskUser[]
+  review        TaskReview?
+  files         UploadFile[]
+  contents      TaskContent[]
+  rejections    TaskRejectionHistory[]
+  notifications Notification[]         @relation("NotificationTask")
+
+  @@index([project_id])
+}
+
+model TaskUser {
+  id          Int      @id @default(autoincrement())
+  task_id     String   @db.Uuid
+  user_id     String   @db.Uuid
+  assigned_at DateTime
+
+  task Task @relation(fields: [task_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([task_id, user_id])
+  @@index([user_id])
+}
+
+model TaskReview {
+  id             Int      @id @default(autoincrement())
+  task_id        String   @unique @db.Uuid // mỗi task chỉ có 1 review
+  reviewer_id    String   @db.Uuid // người đánh giá
+  quality_score  Float
+  feedback_score Float?
+  notes          String
+  reviewed_at    DateTime
+  created_at     DateTime
+  updated_at     DateTime
+
+  task     Task @relation(fields: [task_id], references: [id])
+  reviewer User @relation("ReviewerTaskReviews", fields: [reviewer_id], references: [id])
+
+  @@index([reviewer_id])
+}
+
+model UploadFile {
+  id          Int      @id @default(autoincrement())
+  task_id     String   @db.Uuid
+  file_name   String
+  file_url    String
+  file_size   Int
+  mime_type   String
+  uploaded_at DateTime
+  uploaded_by String   @db.Uuid
+  created_at  DateTime
+  updated_at  DateTime
+
+  task     Task @relation(fields: [task_id], references: [id])
+  uploader User @relation(fields: [uploaded_by], references: [id])
+
+  @@index([task_id])
+  @@index([uploaded_by])
+}
+
+model TaskContent {
+  id         Int               @id @default(autoincrement())
+  task_id    String            @db.Uuid
+  user_id    String            @db.Uuid
+  type       TaskContentType
+  content    String
+  status     TaskContentStatus
+  created_at DateTime
+  updated_at DateTime
+
+  task Task @relation(fields: [task_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([task_id])
+  @@index([user_id])
+}
+
+model TaskRejectionHistory {
+  id          Int      @id @default(autoincrement())
+  task_id     String   @db.Uuid
+  rejected_by String   @db.Uuid
+  rejected_at DateTime
+  reason      String
+  notes       String?
+  created_at  DateTime
+  updated_at  DateTime
+
+  task     Task @relation(fields: [task_id], references: [id])
+  reviewer User @relation(fields: [rejected_by], references: [id])
+
+  @@index([task_id])
+  @@index([rejected_by])
+}
