@@ -1,4 +1,4 @@
-import { Prisma } from "generated/prisma"
+import { Prisma } from "@prisma/client"
 
 // Type Predicate
 export function isUniqueConstraintPrismaError(error: any): error is Prisma.PrismaClientKnownRequestError {
