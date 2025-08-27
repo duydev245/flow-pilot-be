@@ -19,3 +19,9 @@ export const generateRandomFilename = (filename: string) => {
   const ext = path.extname(filename)
   return `${uuidv4()}${ext}`
 }
+
+export const generateUuid = (): string => {
+  const randomUuid = uuidv4();
+
+  return randomUuid;
+}
