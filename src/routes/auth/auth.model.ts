@@ -19,3 +19,8 @@ export const RegisterBodySchema = UserSchema.pick({
 })
 
 
+export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
+
+export const RegisterResSchema = UserSchema.omit({
+    
+})
