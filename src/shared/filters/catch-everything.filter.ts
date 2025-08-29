@@ -29,6 +29,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
         }
 
         const responseBody = {
+            success: false,
             statusCode: httpStatus,
             message,
             timestamp: new Date().toISOString(),

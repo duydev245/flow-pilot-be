@@ -7,6 +7,7 @@ import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type';
 import { AuthRepository } from './auth.repo';
 import { EmailNotFoundException } from './auth.error';
 import { InvalidPasswordException } from 'src/shared/error';
+import { SuccessResponse } from 'src/shared/sucess';
 
 @Injectable()
 export class AuthService {
@@ -22,7 +23,6 @@ export class AuthService {
   async login(body: LoginBodyType) {
     this.logger.log('Run Job Login')
     try {
-      // 1. Lấy thông tin user, kiểm tra user có tồn tại hay không, mật khẩu có đúng không
       const user = await this.authRepository.findUniqueUserIncludeRole({
         email: body.email,
       })
@@ -38,47 +38,45 @@ export class AuthService {
 
       const key: number = new Date().getTime();
 
-      const tokens = await this.generateTokens({
-        userId: user.id,
-        roleId: user.role_id,
+      const accessToken = await this.generateTokens({
+        user_id: user.id,
+        role_id: user.role_id,
         roleName: user.role.role,
         key
       })
 
-      return {
-        success: true,
-        message: 'Login Sucessful',
-        tokens: tokens
-      };
+      return SuccessResponse('Login Sucessful', { accessToken })
     } catch (error) {
-      console.error("🚀 ~ AuthService ~ login ~ error:", error)
+      this.logger.error(error.message);
+      console.error(error);
       throw error;
     }
   }
 
-
-
-  async generateTokens({ userId, roleId, roleName, key }: AccessTokenPayloadCreate) {
+  async generateTokens({ user_id, role_id, roleName, key }: AccessTokenPayloadCreate) {
     const [accessToken, refreshToken] = await Promise.all([
       this.tokenService.signAccessToken({
-        userId,
-        roleId,
+        user_id,
+        role_id,
         roleName,
         key
       }),
       this.tokenService.signRefreshToken({
-        userId,
+        user_id,
         key
       }),
     ])
     const decodedRefreshToken = await this.tokenService.verifyRefreshToken(refreshToken)
-    console.log("🚀 ~ AuthService ~ generateTokens ~ decodedRefreshToken:", decodedRefreshToken)
-    // await this.authRepository.createRefreshToken({
-    //   token: refreshToken,
-    //   userId,
-    //   expiresAt: new Date(decodedRefreshToken.exp * 1000),
-    // })
-    return { accessToken, refreshToken }
+    await this.authRepository.createRefreshToken({
+      token: refreshToken,
+      user_id,
+      expired_at: new Date(decodedRefreshToken.exp * 1000),
+    })
+    return accessToken;
+  }
+
+  logout(token: string) {
+    return token
   }
 
 }

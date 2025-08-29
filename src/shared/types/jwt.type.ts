@@ -1,6 +1,6 @@
 export interface AccessTokenPayloadCreate {
-  userId: string
-  roleId: number
+  user_id: string
+  role_id: number
   roleName: string
   key: number
 }
@@ -11,7 +11,7 @@ export interface AccessTokenPayload extends AccessTokenPayloadCreate {
 }
 
 export interface RefreshTokenPayloadCreate {
-  userId: string
+  user_id: string
   key: number
 }
 

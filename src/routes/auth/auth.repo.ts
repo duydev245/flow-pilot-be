@@ -18,4 +18,10 @@ export class AuthRepository {
     })
   }
 
+  createRefreshToken(data: { token: string; user_id: string; expired_at: Date }) {
+    return this.prismaService.refreshToken.create({
+      data,
+    })
+  }
+
 }
