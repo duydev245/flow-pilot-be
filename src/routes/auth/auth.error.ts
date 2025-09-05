@@ -12,5 +12,3 @@ export const EmailNotFoundException = new UnauthorizedException({ code: 'AUTH_IN
 
 // Auth token related errors
 export const RefreshTokenAlreadyUsedException = new UnauthorizedException({ code: 'AUTH_REFRESH_TOKEN_ALREADY_USED', message: 'Refresh Token Already Used' })
-
-export const UnauthorizedAccessException = new UnauthorizedException({ code: 'AUTH_UNAUTHORIZED_ACCESS', message: 'Unauthorized Access' })

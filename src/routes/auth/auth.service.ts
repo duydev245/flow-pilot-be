@@ -1,12 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
 import { LoginBodyType } from './auth.model';
-// import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo';
 import { TokenService } from 'src/shared/services/token.service';
 import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type';
 import { AuthRepository } from './auth.repo';
-import { EmailNotFoundException, RefreshTokenAlreadyUsedException, UnauthorizedAccessException } from './auth.error';
-import { InvalidPasswordException } from 'src/shared/error';
+import { EmailNotFoundException, RefreshTokenAlreadyUsedException } from './auth.error';
+import { InvalidPasswordException, UnauthorizedAccessException } from 'src/shared/error';
 import { SuccessResponse } from 'src/shared/sucess';
 import { isNotFoundPrismaError } from 'src/shared/helpers';
 
@@ -46,7 +45,6 @@ export class AuthService {
       return SuccessResponse('Login Sucessful', { accessToken, refreshToken })
     } catch (error) {
       this.logger.error(error.message);
-      console.error(error);
       throw error;
     }
   }
@@ -73,7 +71,6 @@ export class AuthService {
 
   async logout(refreshToken: string) {
     try {
-      await this.tokenService.verifyRefreshToken(refreshToken);
       await this.authRepository.deleteRefreshToken({
         token: refreshToken,
       })
@@ -81,8 +78,6 @@ export class AuthService {
       return SuccessResponse('Logout Sucessful')
     } catch (error) {
       this.logger.error(error.message);
-      console.error(error);
-
       if (isNotFoundPrismaError(error)) {
         throw RefreshTokenAlreadyUsedException;
       }
