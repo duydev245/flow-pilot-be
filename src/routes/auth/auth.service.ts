@@ -5,9 +5,10 @@ import { LoginBodyType } from './auth.model';
 import { TokenService } from 'src/shared/services/token.service';
 import { AccessTokenPayloadCreate } from 'src/shared/types/jwt.type';
 import { AuthRepository } from './auth.repo';
-import { EmailNotFoundException } from './auth.error';
+import { EmailNotFoundException, RefreshTokenAlreadyUsedException, UnauthorizedAccessException } from './auth.error';
 import { InvalidPasswordException } from 'src/shared/error';
 import { SuccessResponse } from 'src/shared/sucess';
+import { isNotFoundPrismaError } from 'src/shared/helpers';
 
 @Injectable()
 export class AuthService {
@@ -36,16 +37,13 @@ export class AuthService {
         throw InvalidPasswordException;
       }
 
-      const key: number = new Date().getTime();
-
-      const accessToken = await this.generateTokens({
+      const { accessToken, refreshToken } = await this.generateTokens({
         user_id: user.id,
         role_id: user.role_id,
         roleName: user.role.role,
-        key
       })
 
-      return SuccessResponse('Login Sucessful', { accessToken })
+      return SuccessResponse('Login Sucessful', { accessToken, refreshToken })
     } catch (error) {
       this.logger.error(error.message);
       console.error(error);
@@ -53,17 +51,15 @@ export class AuthService {
     }
   }
 
-  async generateTokens({ user_id, role_id, roleName, key }: AccessTokenPayloadCreate) {
+  async generateTokens({ user_id, role_id, roleName }: AccessTokenPayloadCreate) {
     const [accessToken, refreshToken] = await Promise.all([
       this.tokenService.signAccessToken({
         user_id,
         role_id,
         roleName,
-        key
       }),
       this.tokenService.signRefreshToken({
         user_id,
-        key
       }),
     ])
     const decodedRefreshToken = await this.tokenService.verifyRefreshToken(refreshToken)
@@ -72,11 +68,27 @@ export class AuthService {
       user_id,
       expired_at: new Date(decodedRefreshToken.exp * 1000),
     })
-    return accessToken;
+    return { accessToken, refreshToken };
   }
 
-  logout(token: string) {
-    return token
+  async logout(refreshToken: string) {
+    try {
+      await this.tokenService.verifyRefreshToken(refreshToken);
+      await this.authRepository.deleteRefreshToken({
+        token: refreshToken,
+      })
+
+      return SuccessResponse('Logout Sucessful')
+    } catch (error) {
+      this.logger.error(error.message);
+      console.error(error);
+
+      if (isNotFoundPrismaError(error)) {
+        throw RefreshTokenAlreadyUsedException;
+      }
+
+      throw UnauthorizedAccessException;
+    }
   }
 
 }

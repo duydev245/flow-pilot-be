@@ -132,7 +132,7 @@ model User {
 
 model RefreshToken {
   id          Int       @id @default(autoincrement())
-  token       String
+  token       String    @unique
   device_info String?
   ip_address  String?
   user_id     String    @db.Uuid

@@ -11,5 +11,6 @@ export const EmailAlreadyExistsException = new UnprocessableEntityException(
 export const EmailNotFoundException = new UnauthorizedException({ code: 'AUTH_INVALID_CREDENTIALS', message: 'Invalid email or password' })
 
 // Auth token related errors
-export const RefreshTokenAlreadyUsedException = new UnauthorizedException('Error.RefreshTokenAlreadyUsed')
-export const UnauthorizedAccessException = new UnauthorizedException('Error.UnauthorizedAccess')
+export const RefreshTokenAlreadyUsedException = new UnauthorizedException({ code: 'AUTH_REFRESH_TOKEN_ALREADY_USED', message: 'Refresh Token Already Used' })
+
+export const UnauthorizedAccessException = new UnauthorizedException({ code: 'AUTH_UNAUTHORIZED_ACCESS', message: 'Unauthorized Access' })

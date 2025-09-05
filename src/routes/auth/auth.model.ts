@@ -36,7 +36,17 @@ export const RefreshTokenBodySchema = z.object({
 
 export const RefreshTokenResSchema = LoginResSchema
 
+export const LogoutBodySchema = RefreshTokenBodySchema
+
+export const RefreshTokenSchema = z.object({
+  token: z.string(),
+  user_id: z.string(),
+  expired_at: z.date(),
+  created_at: z.date(),
+})
+
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 export type LoginResType = z.infer<typeof LoginResSchema>
 export type RefreshTokenBodyType = z.infer<typeof RefreshTokenBodySchema>
 export type RefreshTokenResType = LoginResType
+export type RefreshTokenType = z.infer<typeof RefreshTokenSchema>
