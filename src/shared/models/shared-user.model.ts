@@ -18,10 +18,9 @@ export const UserSchema = z.object({
     status: z.enum(UserStatus),
 });
 
-export type UserType = z.infer<typeof UserSchema>
-
 export const UserWithRoleSchema = UserSchema.extend({
     role: SystemRoleSchema,
 });
 
+export type UserType = z.infer<typeof UserSchema>
 export type UserWithRoleType = z.infer<typeof UserWithRoleSchema>;

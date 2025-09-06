@@ -15,3 +15,5 @@ export const InvalidExpiredAccessTokenException = new UnauthorizedException({ co
 export const RefreshTokenRequiredException = new BadRequestException({ code: 'REFRESH_TOKEN_IS_REQUIRED', message: 'Refresh Token is required' })
 
 export const InvalidExpiredRefreshTokenException = new UnauthorizedException({ code: 'INVALID_EXPIRED_REFRESH_TOKEN', message: 'Invalid or expired refresh token' })
+
+export const UserNotFoundException = new UnauthorizedException({ code: 'AUTH_INVALID_USER', message: 'User is not found!' })

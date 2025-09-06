@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginBodyDTO, LoginResDTO, LogoutBodyDTO } from './auth.dto';
+import { LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO } from './auth.dto';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { MessageResDTO } from 'src/shared/dtos/response.dto';
 import { RefreshTokenGuard } from 'src/shared/guards/refresh-token.guard';
@@ -19,10 +19,15 @@ export class AuthController {
   @Post('logout')
   @UseGuards(RefreshTokenGuard)
   @ZodSerializerDto(MessageResDTO)
-  logout(@Body() _body: LogoutBodyDTO, @RefreshTokenStr() refreshToken: string,) {
+  logout(@Body() _body: LogoutBodyDTO, @RefreshTokenStr() refreshToken: string) {
     return this.authService.logout(refreshToken);
   }
 
-  
+  @Post('refresh-token')
+  @UseGuards(RefreshTokenGuard)
+  @ZodSerializerDto(RefreshTokenResDTO)
+  refreshToken(@Body() _body: RefreshTokenBodyDTO, @RefreshTokenStr() refreshToken: string) {
+    return this.authService.refreshToken(refreshToken)
+  }
 
 }

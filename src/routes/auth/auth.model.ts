@@ -26,27 +26,32 @@ export const LoginBodySchema = UserSchema.pick({
 
 export const LoginResSchema = z.object({
     accessToken: z.string(),
+    refreshToken: z.string(),
     role: z.string(),
-    wsid: z.string(),
 }).strict()
 
 export const RefreshTokenBodySchema = z.object({
     refreshToken: z.string(),
 }).strict()
 
-export const RefreshTokenResSchema = LoginResSchema
+export const RefreshTokenSchema = z.object({
+    id: z.number(),
+    token: z.string(),
+    device_info: z.string().nullable(),
+    ip_address: z.string().nullable(),
+    user_id: z.uuid(),
+    expired_at: z.date().nullable(),
+    created_at: z.date().default(() => new Date()),
+    updated_at: z.date().nullable().default(() => new Date())
+});
 
 export const LogoutBodySchema = RefreshTokenBodySchema
 
-export const RefreshTokenSchema = z.object({
-  token: z.string(),
-  user_id: z.string(),
-  expired_at: z.date(),
-  created_at: z.date(),
-})
+export const RefreshTokenResSchema = LoginResSchema
 
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 export type LoginResType = z.infer<typeof LoginResSchema>
 export type RefreshTokenBodyType = z.infer<typeof RefreshTokenBodySchema>
 export type RefreshTokenResType = LoginResType
 export type RefreshTokenType = z.infer<typeof RefreshTokenSchema>
+export type LogoutBodyType = RefreshTokenBodyType

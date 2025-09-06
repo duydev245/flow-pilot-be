@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { UserWithRoleType } from 'src/shared/models/shared-user.model';
+import { UserType, UserWithRoleType } from 'src/shared/models/shared-user.model';
 import { WhereUniqueUserType } from 'src/shared/repositories/shared-user.repo';
 import { PrismaService } from 'src/shared/services/prisma.service';
 import { RefreshTokenType } from './auth.model';
+import { RoleType } from 'src/shared/models/shared-role.model';
 
 @Injectable()
 export class AuthRepository {
@@ -28,6 +29,14 @@ export class AuthRepository {
   deleteRefreshToken(where: { token: string }) {
     return this.prismaService.refreshToken.delete({
       where
+    })
+  }
+
+  async findUniqueRefreshToken(where: {
+    token: string
+  }): Promise<RefreshTokenType | null> {
+    return this.prismaService.refreshToken.findUnique({
+      where,
     })
   }
 
