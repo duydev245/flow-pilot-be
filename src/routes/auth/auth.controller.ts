@@ -5,8 +5,10 @@ import { ZodSerializerDto } from 'nestjs-zod';
 import { MessageResDTO } from 'src/shared/dtos/response.dto';
 import { RefreshTokenGuard } from 'src/shared/guards/refresh-token.guard';
 import { RefreshTokenStr } from 'src/shared/decorators/refresh-token.decorator';
+import { ApiTags } from '@nestjs/swagger';
 
 @Controller('auth')
+@ApiTags('Auth Module')
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
