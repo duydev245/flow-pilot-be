@@ -63,7 +63,7 @@ export class AuthRepository {
     })
   }
 
-  deleteVerificationCode(where: Pick<VerificationCodeType, 'email'>) {
+  deleteVerificationCode(where: Pick<VerificationCodeType, 'email' | 'type'>) {
     return this.prismaService.verificationCode.delete({
       where,
     })

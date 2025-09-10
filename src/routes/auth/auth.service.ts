@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
-import { LoginBodyType, SendOTPBodyType, VerifyOTPBodyType } from './auth.model';
+import { ForgotPasswordBodyType, LoginBodyType, SendOTPBodyType, VerifyOTPBodyType } from './auth.model';
 import { TokenService } from 'src/shared/services/token.service';
 import { AuthRepository } from './auth.repo';
 import { EmailNotFoundException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
@@ -14,6 +14,7 @@ import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 import { addMilliseconds } from 'date-fns';
 import ms from 'ms';
 import envConfig from 'src/shared/config';
+import id from 'zod/v4/locales/id.js';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +27,26 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly sharedUserRepository: SharedUserRepository,
   ) { }
+
+  async validateVerificationCode(payload: VerifyOTPBodyType) {
+    const { email, type, code } = payload
+
+    const verificationCode = await this.authRepository.findUniqueVerificationCode({
+      email,
+      type,
+      code
+    });
+
+    if (!verificationCode) {
+      throw InvalidOTPException;
+    }
+
+    // Check if OTP is expired
+    if (verificationCode.expired_at < new Date()) {
+      throw ExpiredOTPException;
+    }
+    return verificationCode;
+  }
 
   async login(body: LoginBodyType) {
     this.logger.log('Run Job Login')
@@ -147,9 +168,39 @@ export class AuthService {
     }
   }
 
-  async forgotPassword() {
-    await this.emailService.sendOTP({ email: "", code: "123456" })
-    return "Forgot Password"
+  async forgotPassword(body: ForgotPasswordBodyType) {
+    try {
+      const { email, newPassword, code } = body;
+      // Check if email exists
+      const user = await this.sharedUserRepository.findUnique({
+        email
+      });
+
+      if (!user) {
+        throw EmailNotFoundException;
+      }
+
+      // Validate OTP
+      await this.validateVerificationCode({
+        email,
+        type: TypeOfVerificationCode.forgot_password,
+        code
+      })
+
+      // Hash new password
+      const hashedNewPassword = await this.hashingService.hash(newPassword);
+
+      // Update password and delete used OTP
+      await Promise.all([
+        this.sharedUserRepository.update({ id: user.id }, { password: hashedNewPassword }),
+        this.authRepository.deleteVerificationCode({ email, type: TypeOfVerificationCode.forgot_password }),
+      ])
+
+      return SuccessResponse('Password reset successful');
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
   }
 
   async sendOTP(body: SendOTPBodyType) {
@@ -205,7 +256,8 @@ export class AuthService {
 
       // If everything is fine, delete the used OTP
       await this.authRepository.deleteVerificationCode({
-        email
+        email,
+        type
       });
 
       return SuccessResponse('OTP verified successfully');

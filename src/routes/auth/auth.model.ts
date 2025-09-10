@@ -20,6 +20,24 @@ import z from "zod";
 
 // export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
 
+export const ForgotPasswordBodySchema = z
+    .object({
+        email: z.email(),
+        code: z.string().length(6),
+        newPassword: z.string().min(6).max(100).regex(/^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{6,}$/, "Password must contain at least one uppercase letter, one number, and one special character"),
+        confirmNewPassword: z.string().min(6).max(100)
+    })
+    .strict()
+    .superRefine(({ confirmNewPassword, newPassword }, ctx) => {
+        if (confirmNewPassword !== newPassword) {
+            ctx.addIssue({
+                code: 'custom',
+                message: 'Passwords do not match',
+                path: ['confirmNewPassword'],
+            })
+        }
+    })
+
 export const VerificationCodeSchema = z.object({
     id: z.number().int(),
     email: z.email().max(500),
@@ -73,6 +91,7 @@ export const LogoutBodySchema = RefreshTokenBodySchema
 
 export const RefreshTokenResSchema = LoginResSchema
 
+export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
 export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
 export type VerifyOTPBodyType = z.infer<typeof VerifyOTPBodySchema>
 export type VerificationCodeType = z.infer<typeof VerificationCodeSchema>
