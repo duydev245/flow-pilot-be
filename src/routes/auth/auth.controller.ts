@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO, SendOTPBodyDTO } from './auth.dto';
+import { LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO, SendOTPBodyDTO, VerifyOTPBodyDTO } from './auth.dto';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { MessageResDTO } from 'src/shared/dtos/response.dto';
 import { RefreshTokenGuard } from 'src/shared/guards/refresh-token.guard';
@@ -26,8 +26,15 @@ export class AuthController {
   }
 
   @Post('send-otp')
+  @ZodSerializerDto(MessageResDTO)
   sendOTP(@Body() body: SendOTPBodyDTO) {
     return this.authService.sendOTP(body)
+  }
+
+  @Post('verify-otp')
+  @ZodSerializerDto(MessageResDTO)
+  verifyOTP(@Body() body: VerifyOTPBodyDTO) {
+    return this.authService.verifyOTP(body)
   }
 
   @Post('refresh-token')

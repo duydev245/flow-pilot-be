@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
-import { LoginBodyType, SendOTPBodyType } from './auth.model';
+import { LoginBodyType, SendOTPBodyType, VerifyOTPBodyType } from './auth.model';
 import { TokenService } from 'src/shared/services/token.service';
 import { AuthRepository } from './auth.repo';
 import { EmailNotFoundException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
-import { InvalidPasswordException, UnauthorizedAccessException, UserNotFoundException } from 'src/shared/error';
+import { ExpiredOTPException, InvalidOTPException, InvalidPasswordException, UnauthorizedAccessException, UserNotFoundException } from 'src/shared/error';
 import { SuccessResponse } from 'src/shared/sucess';
 import { generateOTP, isNotFoundPrismaError } from 'src/shared/helpers';
 import { IAccessTokenPayloadCreate } from 'src/shared/types/jwt.type';
@@ -147,7 +147,6 @@ export class AuthService {
     }
   }
 
-
   async forgotPassword() {
     await this.emailService.sendOTP({ email: "", code: "123456" })
     return "Forgot Password"
@@ -179,6 +178,37 @@ export class AuthService {
       await this.emailService.sendOTP({ email, code });
 
       return SuccessResponse('Send OTP Successful');
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async verifyOTP(body: VerifyOTPBodyType) {
+    try {
+      const { email, type, code } = body;
+
+      const verificationCode = await this.authRepository.findUniqueVerificationCode({
+        email,
+        type,
+        code
+      });
+
+      if (!verificationCode) {
+        throw InvalidOTPException;
+      }
+
+      // Check if OTP is expired
+      if (verificationCode.expired_at < new Date()) {
+        throw ExpiredOTPException;
+      }
+
+      // If everything is fine, delete the used OTP
+      await this.authRepository.deleteVerificationCode({
+        email
+      });
+
+      return SuccessResponse('OTP verified successfully');
     } catch (error) {
       this.logger.error(error.message);
       throw error;
