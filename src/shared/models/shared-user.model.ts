@@ -1,6 +1,6 @@
 import z from 'zod';
 import { SystemRoleSchema } from './shared-role.model';
-import { UserStatus } from '@prisma/client';
+import { UserStatus } from '../constants/auth.constant';
 
 export const UserSchema = z.object({
     id: z.uuid(),
@@ -15,7 +15,7 @@ export const UserSchema = z.object({
     password_changed_at: z.date().nullable().optional(),
     created_at: z.date().default(() => new Date()),
     updated_at: z.date().nullable().default(() => new Date()),
-    status: z.enum(UserStatus),
+    status: z.enum([UserStatus.active, UserStatus.inactive]).default(UserStatus.active),
 });
 
 export const UserWithRoleSchema = UserSchema.extend({

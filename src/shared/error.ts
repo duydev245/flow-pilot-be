@@ -17,3 +17,8 @@ export const RefreshTokenRequiredException = new BadRequestException({ code: 'RE
 export const InvalidExpiredRefreshTokenException = new UnauthorizedException({ code: 'INVALID_EXPIRED_REFRESH_TOKEN', message: 'Invalid or expired refresh token' })
 
 export const UserNotFoundException = new UnauthorizedException({ code: 'AUTH_INVALID_USER', message: 'User is not found!' })
+
+export const InvalidOTPException = new UnauthorizedException({ code: 'INVALID_OTP', message: 'Invalid OTP' })
+
+export const ExpiredOTPException = new UnauthorizedException({ code: 'EXPIRED_OTP', message: 'Expired OTP' })
+
