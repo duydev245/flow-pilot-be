@@ -1,3 +1,4 @@
+import { TypeOfVerificationCode } from "src/shared/constants/auth.constant";
 import { UserSchema } from "src/shared/models/shared-user.model";
 import z from "zod";
 
@@ -18,6 +19,23 @@ import z from "zod";
 // })
 
 // export type RegisterBodyType = z.infer<typeof RegisterBodySchema>
+
+export const VerificationCodeSchema = z.object({
+    id: z.number().int(),
+    email: z.email().max(500),
+    code: z.string().length(6),
+    type: z.enum([
+        TypeOfVerificationCode.register,
+        TypeOfVerificationCode.forgot_password
+    ]),
+    expired_at: z.date(),
+    created_at: z.date(),
+})
+
+export const SendOTPBodySchema = VerificationCodeSchema.pick({
+    email: true,
+    type: true,
+}).strict()
 
 export const LoginBodySchema = UserSchema.pick({
     email: true,
@@ -49,6 +67,8 @@ export const LogoutBodySchema = RefreshTokenBodySchema
 
 export const RefreshTokenResSchema = LoginResSchema
 
+export type SendOTPBodyType = z.infer<typeof SendOTPBodySchema>
+export type VerificationCodeType = z.infer<typeof VerificationCodeSchema>
 export type LoginBodyType = z.infer<typeof LoginBodySchema>
 export type LoginResType = z.infer<typeof LoginResSchema>
 export type RefreshTokenBodyType = z.infer<typeof RefreshTokenBodySchema>

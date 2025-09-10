@@ -16,6 +16,15 @@ export const ConditionGuard = {
 export type ConditionGuardType = (typeof ConditionGuard)[keyof typeof ConditionGuard]
 
 export const UserStatus = {
-  ACTIVE: 'ACTIVE',
-  INACTIVE: 'INACTIVE',
+  active: 'active',
+  inactive: 'inactive',
 } as const
+
+export type UserStatusType = (typeof UserStatus)[keyof typeof UserStatus]
+
+export const TypeOfVerificationCode = {
+  register: 'register',
+  forgot_password: 'forgot_password',
+} as const
+
+export type TypeOfVerificationCodeType = (typeof TypeOfVerificationCode)[keyof typeof TypeOfVerificationCode]

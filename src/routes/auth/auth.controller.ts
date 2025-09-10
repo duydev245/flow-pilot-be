@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO } from './auth.dto';
+import { LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO, SendOTPBodyDTO } from './auth.dto';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { MessageResDTO } from 'src/shared/dtos/response.dto';
 import { RefreshTokenGuard } from 'src/shared/guards/refresh-token.guard';
@@ -25,11 +25,21 @@ export class AuthController {
     return this.authService.logout(refreshToken);
   }
 
+  @Post('send-otp')
+  sendOTP(@Body() body: SendOTPBodyDTO) {
+    return this.authService.sendOTP(body)
+  }
+
   @Post('refresh-token')
   @UseGuards(RefreshTokenGuard)
   @ZodSerializerDto(RefreshTokenResDTO)
   refreshToken(@Body() _body: RefreshTokenBodyDTO, @RefreshTokenStr() refreshToken: string) {
     return this.authService.refreshToken(refreshToken)
+  }
+
+  @Post('forgot-password')
+  forgotPassword() {
+    return this.authService.forgotPassword();
   }
 
 }

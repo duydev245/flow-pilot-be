@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client"
+import { randomInt } from "crypto"
 import path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -24,4 +25,8 @@ export const generateUuid = (): string => {
   const randomUuid = uuidv4();
 
   return randomUuid;
+}
+
+export const generateOTP = () => {
+  return String(randomInt(100000, 1000000))
 }

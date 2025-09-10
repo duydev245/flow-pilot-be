@@ -1,13 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
-import { LoginBodyType } from './auth.model';
+import { LoginBodyType, SendOTPBodyType } from './auth.model';
 import { TokenService } from 'src/shared/services/token.service';
 import { AuthRepository } from './auth.repo';
-import { EmailNotFoundException, RefreshTokenAlreadyUsedException } from './auth.error';
+import { EmailNotFoundException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
 import { InvalidPasswordException, UnauthorizedAccessException, UserNotFoundException } from 'src/shared/error';
 import { SuccessResponse } from 'src/shared/sucess';
-import { isNotFoundPrismaError } from 'src/shared/helpers';
+import { generateOTP, isNotFoundPrismaError } from 'src/shared/helpers';
 import { IAccessTokenPayloadCreate } from 'src/shared/types/jwt.type';
+import { EmailService } from 'src/shared/services/email.service';
+import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo';
+import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
+import { addMilliseconds } from 'date-fns';
+import ms from 'ms';
+import envConfig from 'src/shared/config';
 
 @Injectable()
 export class AuthService {
@@ -16,8 +22,9 @@ export class AuthService {
   constructor(
     private readonly hashingService: HashingService,
     private readonly tokenService: TokenService,
-    // private readonly sharedUserRepository: SharedUserRepository,
+    private readonly emailService: EmailService,
     private readonly authRepository: AuthRepository,
+    private readonly sharedUserRepository: SharedUserRepository,
   ) { }
 
   async login(body: LoginBodyType) {
@@ -26,10 +33,9 @@ export class AuthService {
       const user = await this.authRepository.findUniqueUserIncludeRole({
         email: body.email,
       })
-      console.log("🚀 ~ AuthService ~ login ~ user:", user)
 
       if (!user) {
-        throw EmailNotFoundException;
+        throw InvalidCredentialsException;
       }
 
       const isPasswordMatch = await this.hashingService.compare(body.password, user.password);
@@ -86,12 +92,10 @@ export class AuthService {
       }
 
       const { user_id } = this.tokenService.decodeRefreshToken(token);
-      console.log("🚀 ~ AuthService ~ refreshToken ~ user_id:", user_id)
 
       const user = await this.authRepository.findUniqueUserIncludeRole({
         id: user_id,
       })
-      console.log("🚀 ~ AuthService ~ refreshToken ~ user:", user)
 
       if (!user) {
         throw UserNotFoundException;
@@ -140,6 +144,44 @@ export class AuthService {
       }
 
       throw UnauthorizedAccessException;
+    }
+  }
+
+
+  async forgotPassword() {
+    await this.emailService.sendOTP({ email: "", code: "123456" })
+    return "Forgot Password"
+  }
+
+  async sendOTP(body: SendOTPBodyType) {
+    try {
+      const { email, type } = body;
+
+      // Check if email exists in case of forgot password
+      const user = await this.sharedUserRepository.findUnique({
+        email
+      });
+
+      if (type === TypeOfVerificationCode.forgot_password && !user) {
+        throw EmailNotFoundException;
+      }
+
+      // Generate OTP
+      const code = generateOTP()
+      await this.authRepository.createVerificationCode({
+        email,
+        code,
+        type,
+        expired_at: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
+      })
+
+      // Send OTP to email
+      await this.emailService.sendOTP({ email, code });
+
+      return SuccessResponse('Send OTP Successful');
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
     }
   }
 
