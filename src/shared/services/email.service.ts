@@ -22,7 +22,7 @@ export class EmailService {
         const htmlContent = template.replaceAll('{{subject}}', subject).replace('{{code}}', payload.code);
 
         return await this.resend.emails.send({
-            from: 'Flow Pilot <no-reply@resend.dev>',
+            from: 'Flow Pilot <no-reply@flowpilot.io.vn>',
             to: [payload.email],
             subject: subject,
             html: htmlContent,
