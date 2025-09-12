@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards, Put, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ForgotPasswordBodyDTO, LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO, SendOTPBodyDTO } from './auth.dto';
+import { ChangePasswordBodyDTO, ForgotPasswordBodyDTO, LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO, SendOTPBodyDTO } from './auth.dto';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { MessageResDTO } from 'src/shared/dtos/response.dto';
 import { RefreshTokenGuard } from 'src/shared/guards/refresh-token.guard';
@@ -53,11 +53,13 @@ export class AuthController {
     return this.authService.forgotPassword(body);
   }
 
-  // @Put('change-password')
-  // @ZodSerializerDto(MessageResDTO)
-  // changePassword(@Body() body: ChangePasswordBodyDTO) {
-  //   return this.authService.changePassword(body);
-  // }
+  @Put('change-password')
+  @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.ProjectManager, RoleName.Employee])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  changePassword(@Body() body: ChangePasswordBodyDTO) {
+    return this.authService.changePassword(body);
+  }
 
   @Get('test-access-token')
   @Roles([RoleName.Employee])
