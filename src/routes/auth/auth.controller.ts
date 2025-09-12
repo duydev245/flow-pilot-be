@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Put } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Put, Get } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ForgotPasswordBodyDTO, LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO, SendOTPBodyDTO } from './auth.dto';
 import { ZodSerializerDto } from 'nestjs-zod';
@@ -6,6 +6,9 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto';
 import { RefreshTokenGuard } from 'src/shared/guards/refresh-token.guard';
 import { RefreshTokenStr } from 'src/shared/decorators/refresh-token.decorator';
 import { ApiTags } from '@nestjs/swagger';
+import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
+import { Roles } from 'src/shared/decorators/roles.decorator';
+import { RoleName } from 'src/shared/constants/role.constant';
 
 @Controller('auth')
 @ApiTags('Auth Module')
@@ -55,5 +58,12 @@ export class AuthController {
   // changePassword(@Body() body: ChangePasswordBodyDTO) {
   //   return this.authService.changePassword(body);
   // }
+
+  @Get('test-access-token')
+  @Roles([RoleName.Employee])
+  @UseGuards(AuthRoleGuard)
+  testAccessToken() {
+    return { message: 'Access token is valid!' }
+  }
 
 }
