@@ -9,6 +9,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { RoleName } from 'src/shared/constants/role.constant';
+import { APIKeyGuard } from 'src/shared/guards/api-key.guard';
 
 @Controller('auth')
 @ApiTags('Auth Module')
