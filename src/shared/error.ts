@@ -23,3 +23,5 @@ export const InvalidOTPException = new UnauthorizedException({ code: 'INVALID_OT
 export const ExpiredOTPException = new UnauthorizedException({ code: 'EXPIRED_OTP', message: 'Expired OTP' })
 
 export const ForbiddenResourceException = new ForbiddenException({ code: 'FORBIDDEN_RESOURCE', message: 'You do not have permission to access this resource' })
+
+export const InvalidAPIKeyException = new UnauthorizedException({ code: 'INVALID_API_KEY', message: 'Invalid API Key' })

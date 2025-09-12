@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HashingService } from 'src/shared/services/hashing.service';
-import { ForgotPasswordBodyType, LoginBodyType, SendOTPBodyType, VerifyOTPBodyType } from './auth.model';
+import { ChangePasswordBodyType, ForgotPasswordBodyType, LoginBodyType, SendOTPBodyType, VerifyOTPBodyType } from './auth.model';
 import { TokenService } from 'src/shared/services/token.service';
 import { AuthRepository } from './auth.repo';
 import { EmailNotFoundException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
@@ -75,7 +75,8 @@ export class AuthService {
         {
           accessToken,
           refreshToken,
-          role: user.role.role.toUpperCase()
+          role: user.role.role.toUpperCase(),
+          isFirstLogin: user.is_first_login
         }
       )
     } catch (error) {
@@ -192,7 +193,7 @@ export class AuthService {
 
       // Update password and delete used OTP
       await Promise.all([
-        this.sharedUserRepository.update({ id: user.id }, { password: hashedNewPassword }),
+        this.sharedUserRepository.update({ id: user.id }, { password: hashedNewPassword, is_first_login: false }),
         this.authRepository.deleteVerificationCode({ email, type: TypeOfVerificationCode.forgot_password }),
       ])
 
@@ -261,6 +262,37 @@ export class AuthService {
       });
 
       return SuccessResponse('OTP verified successfully');
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async changePassword(body: ChangePasswordBodyType) {
+    try {
+      const { email, newPassword } = body;
+      
+      // Check if email exists
+      const user = await this.sharedUserRepository.findUnique({
+        email
+      });
+
+      if (!user) {
+        throw EmailNotFoundException;
+      }
+
+      // Hash new password
+      const hashedNewPassword = await this.hashingService.hash(newPassword);
+
+      // Update password
+      await this.sharedUserRepository.update({
+        id: user.id
+      }, {
+        password: hashedNewPassword,
+        is_first_login: false
+      });
+
+      return SuccessResponse('Change password successful');
     } catch (error) {
       this.logger.error(error.message);
       throw error;

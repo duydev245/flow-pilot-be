@@ -5,6 +5,7 @@ import { TokenService } from '../services/token.service';
 import { PrismaService } from '../services/prisma.service';
 import { IAccessTokenPayload } from '../types/jwt.type';
 import { AccessTokenRequiredException, ForbiddenResourceException, InvalidExpiredAccessTokenException, UserNotFoundException } from '../error';
+import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
 export class AuthRoleGuard implements CanActivate {
@@ -15,7 +16,7 @@ export class AuthRoleGuard implements CanActivate {
     ) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const requiredRoles = this.reflector.getAllAndOverride<string[]>('roles', [
+        const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
             context.getHandler(),
             context.getClass(),
         ]);
