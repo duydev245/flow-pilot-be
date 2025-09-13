@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common'
-import { UserStatus } from '@prisma/client'
+import { UserStatus } from '@prisma/client' // lấy UserStatus từ file shared/constants/auth.constant
 import { UserCreateType, UserUpdateType } from 'src/routes/user/user.model'
 import { PrismaService } from 'src/shared/services/prisma.service'
 
 @Injectable()
 export class UserRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   getAllUsers() {
     return this.prismaService.user.findMany()
@@ -14,6 +14,24 @@ export class UserRepository {
     return this.prismaService.user.findMany({
       where: {
         workspace_id: workspaceId,
+      },
+    })
+  }
+
+  getUser(userId: string) {
+    return this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+        status: true,
+        created_at: true,
+        updated_at: true,
+        // ❌ không chọn password, password_changed_at
       },
     })
   }
@@ -40,6 +58,7 @@ export class UserRepository {
     })
   }
 
+  // thêm select để bỏ password, password_changed_at
   async createUserForSuperAdmin(data: UserCreateType) {
     return this.prismaService.user.create({
       data: {

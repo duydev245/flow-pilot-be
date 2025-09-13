@@ -1,6 +1,12 @@
 import { UserStatus } from 'src/shared/constants/auth.constant'
 import z from 'zod'
 
+// sao không xài UserSchema.Pick
+// export const LoginBodySchema = UserSchema.pick({
+//     email: true,
+//     password: true,
+// }).strict()
+
 export const UserCreateSchema = z
   .object({
     name: z.string().max(255),
@@ -10,6 +16,7 @@ export const UserCreateSchema = z
     status: z.enum([UserStatus.active, UserStatus.inactive]).optional().default(UserStatus.active),
   })
   .strict()
+
 export const UserUpdateSchema = z.object({
   name: z.string().max(255).optional(),
   email: z.email().max(500).optional(),
@@ -24,6 +31,7 @@ export const UserUpdateSchema = z.object({
   // created_at: z.iso.datetime({ offset: true }).optional(),
   // updated_at: z.iso.datetime({ offset: true }).optional(),
 })
+
 export const UserDeletechema = z.object({
   status: z.enum([UserStatus.active, UserStatus.inactive]).optional(),
 })
