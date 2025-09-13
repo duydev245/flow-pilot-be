@@ -1,17 +1,17 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { SharedModule } from './shared/shared.module';
-import { AuthModule } from './routes/auth/auth.module';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { APIKeyGuard } from './shared/guards/api-key.guard';
-import { CatchEverythingFilter } from './shared/filters/catch-everything.filter';
-import { WorkspaceModule } from './routes/workspace/workspace.module';
-import { UserModule } from './routes/user/user.module';
-import { ProjectModule } from './routes/project/project.module';
+import { Module } from '@nestjs/common'
+import { AppController } from './app.controller'
+import { AppService } from './app.service'
+import { SharedModule } from './shared/shared.module'
+import { AuthModule } from './routes/auth/auth.module'
+import { APP_FILTER, APP_GUARD } from '@nestjs/core'
+import { APIKeyGuard } from './shared/guards/api-key.guard'
+import { CatchEverythingFilter } from './shared/filters/catch-everything.filter'
+import { WorkspaceModule } from './routes/workspace/workspace.module'
+import { ProjectModule } from './routes/project/project.module'
+import { UserModule } from 'src/routes/user/user.module'
 
 @Module({
-  imports: [SharedModule, AuthModule, WorkspaceModule, UserModule, ProjectModule],
+  imports: [SharedModule, AuthModule, WorkspaceModule, ProjectModule, UserModule],
   controllers: [AppController],
   providers: [
     AppService,
@@ -25,4 +25,4 @@ import { ProjectModule } from './routes/project/project.module';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}
