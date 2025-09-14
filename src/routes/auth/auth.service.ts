@@ -289,6 +289,7 @@ export class AuthService {
         id: user.id
       }, {
         password: hashedNewPassword,
+        password_changed_at: new Date(),
         is_first_login: false
       });
 
