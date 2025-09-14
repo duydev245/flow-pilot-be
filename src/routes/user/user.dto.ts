@@ -1,6 +1,6 @@
 import { createZodDto } from 'nestjs-zod'
-import { UserCreateSchema, UserDeletechema, UserUpdateSchema } from 'src/routes/user/user.model'
+import { UserCreateSchema, UserDeleteSchema, UserUpdateSchema } from 'src/routes/user/user.model'
 
-export class UserBodyDto extends createZodDto(UserCreateSchema) {}
-export class UserUpdateDto extends createZodDto(UserUpdateSchema) {}
-export class UserDeleteDto extends createZodDto(UserDeletechema) {}
+export class UserCreateBodyDto extends createZodDto(UserCreateSchema) {}
+export class UserUpdateBodyDto extends createZodDto(UserUpdateSchema) {}
+export class UserDeleteBodyDto extends createZodDto(UserDeleteSchema) {}

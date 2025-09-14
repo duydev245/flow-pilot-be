@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { UserCreateType, UserUpdateType } from 'src/routes/user/user.model'
 import { UserStatus, UserStatusType } from 'src/shared/constants/auth.constant'
+import { UserType } from 'src/shared/models/shared-user.model'
 import { PrismaService } from 'src/shared/services/prisma.service'
 
 @Injectable()
 export class UserRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   getAllUsers() {
     return this.prismaService.user.findMany({
@@ -16,11 +17,10 @@ export class UserRepository {
         workspace_id: true,
         avatar_url: true,
         status: true,
-        created_at: true,
-        updated_at: true,
       },
     })
   }
+
   getAllUsersByWorkspaceId(workspaceId: string) {
     return this.prismaService.user.findMany({
       where: {
@@ -33,8 +33,6 @@ export class UserRepository {
         workspace_id: true,
         avatar_url: true,
         status: true,
-        created_at: true,
-        updated_at: true,
       },
     })
   }
@@ -51,11 +49,10 @@ export class UserRepository {
         workspace_id: true,
         avatar_url: true,
         status: true,
-        created_at: true,
-        updated_at: true,
       },
     })
   }
+
   getUserByEmail(email: string) {
     return this.prismaService.user.findUnique({
       where: {
@@ -73,6 +70,7 @@ export class UserRepository {
       },
     })
   }
+
   getRoleById(roleId: number) {
     return this.prismaService.systemRole.findUnique({
       where: {
@@ -81,7 +79,7 @@ export class UserRepository {
     })
   }
 
-  async createUserForSuperAdmin(data: UserCreateType) {
+  async createUserForSuperAdmin(data: Pick<UserType, 'name' | 'email' | 'password' | 'role_id'>) {
     return this.prismaService.user.create({
       data: {
         ...data,
@@ -96,6 +94,39 @@ export class UserRepository {
         status: true,
         created_at: true,
         updated_at: true,
+      },
+    })
+  }
+
+  createUser(data: Pick<UserType, 'name' | 'email' | 'password' | 'role_id' | 'workspace_id'>) {
+    return this.prismaService.user.create({
+      data: {
+        ...data,
+        status: UserStatus.active,
+      },
+      select: {
+        avatar_url: true,
+        name: true,
+        email: true,
+        password: true,
+      },
+    })
+  }
+
+  updateUser(userId: string, data: UserUpdateType) {
+    return this.prismaService.user.update({
+      where: {
+        id: userId,
+        workspace_id: data.workspace_id,
+      },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        workspace_id: true,
+        avatar_url: true,
+        status: true,
       },
     })
   }
@@ -118,6 +149,7 @@ export class UserRepository {
       },
     })
   }
+
   updateUserByAdmin(userId: string, data: UserUpdateType, workspaceId: string) {
     return this.prismaService.user.update({
       where: {
@@ -143,39 +175,21 @@ export class UserRepository {
       where: {
         id: userId,
         workspace_id: workspaceId,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        workspace_id: true,
-        avatar_url: true,
-        status: true,
-        created_at: true,
-        updated_at: true,
-      },
+      }
     })
   }
-  deleteUserBySuperAdmim(userId: string, status: UserStatusType) {
+
+  deleteUser(userId: string, status: UserStatusType) {
     return this.prismaService.user.update({
       where: {
         id: userId,
       },
       data: {
-        status: status,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        workspace_id: true,
-        avatar_url: true,
-        status: true,
-        created_at: true,
-        updated_at: true,
-      },
+        status,
+      }
     })
   }
+
   deleteUserByAdmin(userId: string, workspaceId: string) {
     return this.prismaService.user.update({
       where: {
@@ -198,7 +212,7 @@ export class UserRepository {
     })
   }
 
-  createUserForAdmin(data: UserCreateType, workspaceId: string) {
+  createUserForAdmin(data: Pick<UserType, 'name' | 'email' | 'password' | 'role_id'>, workspaceId: string) {
     return this.prismaService.user.create({
       data: {
         ...data,
