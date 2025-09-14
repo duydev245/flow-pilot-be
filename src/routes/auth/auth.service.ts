@@ -3,7 +3,7 @@ import { HashingService } from 'src/shared/services/hashing.service';
 import { ChangePasswordBodyType, ForgotPasswordBodyType, LoginBodyType, SendOTPBodyType, VerifyOTPBodyType } from './auth.model';
 import { TokenService } from 'src/shared/services/token.service';
 import { AuthRepository } from './auth.repo';
-import { EmailNotFoundException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
+import { EmailNotFoundException, FirstLoginDefaultPasswordException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
 import { ExpiredOTPException, InvalidOTPException, InvalidPasswordException, UnauthorizedAccessException, UserNotFoundException } from 'src/shared/error';
 import { SuccessResponse } from 'src/shared/sucess';
 import { generateOTP, isNotFoundPrismaError } from 'src/shared/helpers';
@@ -217,6 +217,11 @@ export class AuthService {
         throw EmailNotFoundException;
       }
 
+      // Block actions for first-login accounts
+      if (user?.is_first_login) {
+        throw FirstLoginDefaultPasswordException;
+      }
+
       // Generate OTP
       const code = generateOTP()
       await this.authRepository.createVerificationCode({
@@ -271,7 +276,7 @@ export class AuthService {
   async changePassword(body: ChangePasswordBodyType) {
     try {
       const { email, newPassword } = body;
-      
+
       // Check if email exists
       const user = await this.sharedUserRepository.findUnique({
         email
