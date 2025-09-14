@@ -1,8 +1,7 @@
-import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@nestjs/common'
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { Request } from 'express'
 import { TokenService } from '../services/token.service'
-import { PrismaService } from '../services/prisma.service'
 import { IAccessTokenPayload } from '../types/jwt.type'
 import {
   AccessTokenRequiredException,
@@ -12,14 +11,15 @@ import {
 } from '../error'
 import { ROLES_KEY } from '../decorators/roles.decorator'
 import { UserWithRoleType } from 'src/shared/models/shared-user.model'
+import { SharedUserRepository } from '../repositories/shared-user.repo'
 
 @Injectable()
 export class AuthRoleGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly tokenService: TokenService,
-    private readonly prisma: PrismaService,
-  ) {}
+    private readonly sharedUserRepository: SharedUserRepository,
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
@@ -49,10 +49,7 @@ export class AuthRoleGuard implements CanActivate {
     }
 
     // Query user and their role from DB
-    const user: UserWithRoleType | null = await this.prisma.user.findUnique({
-      where: { id: user_id },
-      include: { role: true },
-    })
+    const user: UserWithRoleType | null = await this.sharedUserRepository.findUniqueWithRole({ id: user_id })
     if (!user || !user.role) {
       throw UserNotFoundException
     }
@@ -63,7 +60,7 @@ export class AuthRoleGuard implements CanActivate {
     }
 
     // Attach user to request for further use
-    ;(request as any).user = user
+    ; (request as any).user = user
     return true
   }
 }

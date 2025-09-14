@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../services/prisma.service";
-import { UserType } from "../models/shared-user.model";
+import { UserType, UserWithRoleType } from "../models/shared-user.model";
 
 export type WhereUniqueUserType = { id: string } | { email: string }
 
@@ -12,6 +12,17 @@ export class SharedUserRepository {
         return this.prismaService.user.findFirst({
             where: {
                 ...where,
+            },
+        })
+    }
+
+    findUniqueWithRole(where: WhereUniqueUserType): Promise<UserWithRoleType | null> {
+        return this.prismaService.user.findFirst({
+            where: {
+                ...where,
+            },
+            include: {
+                role: true,
             },
         })
     }

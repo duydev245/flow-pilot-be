@@ -14,7 +14,6 @@ import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 import { addMilliseconds } from 'date-fns';
 import ms from 'ms';
 import envConfig from 'src/shared/config';
-import id from 'zod/v4/locales/id.js';
 
 @Injectable()
 export class AuthService {
