@@ -33,45 +33,79 @@ export class UserService {
     private readonly emailService: EmailService,
     private readonly sharedUserRepository: SharedUserRepository,
   ) { }
+  async checkUserInWorkspace(userId: string, workspaceId: string) {
+    const result = await this.userRepository.checkUserInWorkspace(userId, workspaceId)
+    if (!result) {
+      throw UserNotFoundInWorkSpace
+    }
+    return true
+  }
+
+  async isSuperAdminAccount(userId: string) {
+    const user = await this.sharedUserRepository.findUniqueWithRole({ id: userId })
+    if (user && user.role.role === RoleName.SuperAdmin) {
+      return true
+    }
+    return false
+  }
 
   async getAllUsers(role: string, workspaceId: string) {
-    let result: any[]
-    if (role === RoleName.Admin) {
-      result = await this.userRepository.getAllUsersByWorkspaceId(workspaceId)
-    } else if (role === RoleName.SuperAdmin) {
-      result = await this.userRepository.getAllUsers()
-    } else {
-      throw UserPermissionDeniedError
-    }
+    try {
+      let result: any[]
+      if (role === RoleName.Admin) {
+        result = await this.userRepository.getAllUsersByWorkspaceId(workspaceId)
+      } else if (role === RoleName.SuperAdmin) {
+        result = await this.userRepository.getAllUsers()
+      } else {
+        throw UserPermissionDeniedError
+      }
 
-    if (!result) {
-      throw GetAllUsersError
-    }
+      if (!result) {
+        throw GetAllUsersError
+      }
 
-    return SuccessResponse('Get all users successful', result)
+      return SuccessResponse('Get all users successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
   }
 
   async getMe(userId: string) {
-    const result = await this.sharedUserRepository.findUnique({ id: userId })
+    try {
+      const result = await this.userRepository.getUserById(userId)
 
-    if (!result) {
-      throw GetUsersByIdError
+      if (!result) {
+        throw GetUsersByIdError
+      }
+
+      return SuccessResponse('Get my profile successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
     }
-
-    return SuccessResponse('Get my profile successful', result)
   }
 
   async getUserById(UserId: string) {
-    if (!isUuid(UserId)) {
-      throw WrongUserIdError
-    }
+    try {
+      if (!isUuid(UserId)) {
+        throw WrongUserIdError
+      }
 
-    const result = await this.userRepository.getUserById(UserId)
-    if (!result) {
-      throw GetUsersByIdError
-    }
+      if (await this.isSuperAdminAccount(UserId)) {
+        throw UserPermissionDeniedError
+      }
 
-    return SuccessResponse('Get user by ID successful', result)
+      const result = await this.userRepository.getUserById(UserId)
+      if (!result) {
+        throw GetUsersByIdError
+      }
+
+      return SuccessResponse('Get user by ID successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
   }
 
   async createUser(data: UserCreateType, actorRole: string) {
@@ -124,56 +158,62 @@ export class UserService {
   }
 
   async updateUser(UserId: string, data: UserUpdateType, actorRole: string) {
-    if (!isUuid(UserId)) {
-      throw WrongUserIdError
-    }
-
-    if (!data.workspace_id) {
-      throw WorkspaceRequiredError;
-    }
-
-    let isValidRole: any
-    if (data.role_id) {
-      isValidRole = await this.userRepository.getRoleById(+data.role_id)
-
-      if (!isValidRole) {
-        throw UserRoleNotFoundError
+    try {
+      if (!isUuid(UserId)) {
+        throw WrongUserIdError
       }
 
-      if (
-        actorRole === RoleName.Admin &&
-        isValidRole.role !== RoleName.ProjectManager &&
-        isValidRole.role !== RoleName.Employee
-      ) {
-        throw UserPermissionDeniedError
+      if (!data.workspace_id) {
+        throw WorkspaceRequiredError;
       }
+
+      let isValidRole: any
+      if (data.role_id) {
+        isValidRole = await this.userRepository.getRoleById(+data.role_id)
+
+        if (!isValidRole) {
+          throw UserRoleNotFoundError
+        }
+
+        if (
+          actorRole === RoleName.Admin &&
+          isValidRole.role !== RoleName.ProjectManager &&
+          isValidRole.role !== RoleName.Employee
+        ) {
+          throw UserPermissionDeniedError
+        }
+      }
+
+      if (data.password) {
+        const hashedPassword = await this.hashingService.hash(data.password)
+        data.password = hashedPassword
+      }
+
+      const result = await this.userRepository.updateUser(UserId, data)
+
+      return SuccessResponse('Update user successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
     }
-
-    if (data.password) {
-      const hashedPassword = await this.hashingService.hash(data.password)
-      data.password = hashedPassword
-    }
-
-    const result = await this.userRepository.updateUser(UserId, data)
-
-    return SuccessResponse('Update user successful', result)
   }
 
   async deleteUser(UserId: string, body: UserDeleteType) {
-    if (!isUuid(UserId)) {
-      throw WrongUserIdError
+    try {
+      if (!isUuid(UserId)) {
+        throw WrongUserIdError
+      }
+
+      if (await this.isSuperAdminAccount(UserId)) {
+        throw UserPermissionDeniedError
+      }
+
+      await this.userRepository.deleteUser(UserId, body.status)
+
+      return SuccessResponse('Delete user successful')
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error;
     }
-
-    await this.userRepository.deleteUser(UserId, body.status)
-
-    return SuccessResponse('Delete user successful')
-  }
-
-  async checkUserInWorkspace(userId: string, workspaceId: string) {
-    const result = await this.userRepository.checkUserInWorkspace(userId, workspaceId)
-    if (!result) {
-      throw UserNotFoundInWorkSpace
-    }
-    return true
   }
 }

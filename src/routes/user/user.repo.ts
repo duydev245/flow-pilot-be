@@ -10,10 +10,16 @@ export class UserRepository {
 
   getAllUsers() {
     return this.prismaService.user.findMany({
+      where: {
+        role_id: {
+          not: 1,
+        },
+      },
       select: {
         id: true,
         name: true,
         email: true,
+        role_id: true,
         workspace_id: true,
         avatar_url: true,
         status: true,
@@ -25,11 +31,15 @@ export class UserRepository {
     return this.prismaService.user.findMany({
       where: {
         workspace_id: workspaceId,
+        role_id: {
+          not: 1,
+        },
       },
       select: {
         id: true,
         name: true,
         email: true,
+        role_id: true,
         workspace_id: true,
         avatar_url: true,
         status: true,
@@ -47,6 +57,7 @@ export class UserRepository {
         name: true,
         email: true,
         workspace_id: true,
+        role_id: true,
         avatar_url: true,
         status: true,
       },
@@ -108,7 +119,6 @@ export class UserRepository {
         avatar_url: true,
         name: true,
         email: true,
-        password: true,
       },
     })
   }

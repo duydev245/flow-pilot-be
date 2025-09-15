@@ -38,7 +38,7 @@ export const UserEmailUpdateNotAllowedError = new BadRequestException({
 
 export const UserPermissionDeniedError = new ForbiddenException({
   code: 'FORBIDDEN_EXCEPTION',
-  message: 'You do not have permission to create this role',
+  message: 'You do not have permission to access this resource',
 })
 
 export const UserNotFoundInWorkSpace = new NotFoundException({
