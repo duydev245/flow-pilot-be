@@ -17,14 +17,28 @@ model SystemRole {
 }
 
 model Package {
-  id         String       @id @default(uuid()) @db.Uuid
-  name       String       @unique
-  price      Float
-  created_at DateTime     @default(now())
-  updated_at DateTime?    @updatedAt
-  status     BinaryStatus
-  orders     Order[]
-  workspaces Workspace[]
+  id                 String       @id @default(uuid()) @db.Uuid
+  name               String       @unique
+  duration_in_months Int          @default(1)
+  price              Float
+  description        String?
+  created_at         DateTime     @default(now())
+  updated_at         DateTime?    @updatedAt
+  status             BinaryStatus
+  orders             Order[]
+  workspaces         Workspace[]
+  features           Feature[]
+}
+
+model Feature {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  package_id  String       @db.Uuid
+  created_at  DateTime     @default(now())
+  updated_at  DateTime?    @updatedAt
+  status      BinaryStatus
+  package     Package      @relation(fields: [package_id], references: [id])
 }
 
 model Workspace {
