@@ -87,6 +87,7 @@ export const LoginResSchema = z.object({
     accessToken: z.string(),
     refreshToken: z.string(),
     role: z.string(),
+    wsid: z.string().nullable(),
 }).strict()
 
 export const RefreshTokenBodySchema = z.object({

@@ -75,6 +75,7 @@ export class AuthService {
           accessToken,
           refreshToken,
           role: user.role.role.toUpperCase(),
+          wsid: user.workspace_id ? user.workspace_id : null,
           isFirstLogin: user.is_first_login
         }
       )
@@ -141,7 +142,8 @@ export class AuthService {
         {
           accessToken,
           refreshToken,
-          role: user.role.role.toUpperCase()
+          role: user.role.role.toUpperCase(),
+          wsid: user.workspace_id ? user.workspace_id : null,
         }
       )
     } catch (error) {
