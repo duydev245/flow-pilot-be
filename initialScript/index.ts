@@ -18,6 +18,7 @@ const main = async () => {
         where: { name: "Basic" },
         update: {},
         create: {
+            id: generateUuid(),
             name: "Basic",
             price: 100,
             status: "active",
@@ -28,8 +29,48 @@ const main = async () => {
         where: { name: "Pro" },
         update: {},
         create: {
+            id: generateUuid(),
             name: "Pro",
             price: 300,
+            status: "active",
+        },
+    });
+
+    // 1.1 Features
+    // Tạo 2 features cho mỗi package
+    const feature1 = await prisma.feature.create({
+        data: {
+            id: generateUuid(),
+            name: "Kanban Board",
+            description: "Quản lý công việc theo dạng bảng Kanban",
+            package_id: pkgBasic.id,
+            status: "active",
+        },
+    });
+    const feature2 = await prisma.feature.create({
+        data: {
+            id: generateUuid(),
+            name: "Task Assignment",
+            description: "Giao việc cho thành viên",
+            package_id: pkgBasic.id,
+            status: "active",
+        },
+    });
+    const feature3 = await prisma.feature.create({
+        data: {
+            id: generateUuid(),
+            name: "Advanced Report",
+            description: "Báo cáo nâng cao cho quản lý",
+            package_id: pkgPro.id,
+            status: "active",
+        },
+    });
+    const feature4 = await prisma.feature.create({
+        data: {
+            id: generateUuid(),
+            name: "Time Tracking",
+            description: "Theo dõi thời gian làm việc từng task",
+            package_id: pkgPro.id,
             status: "active",
         },
     });
@@ -42,6 +83,7 @@ const main = async () => {
 
     const workspace = await prisma.workspace.create({
         data: {
+            id: generateUuid(),
             name: "ACME Workspace",
             company_name: "ACME Ltd.",
             package_id: pkgPro.id,
@@ -57,16 +99,12 @@ const main = async () => {
         throw new Error('Department already exist')
     }
 
-    const hr = await prisma.department.upsert({
-        where: { id: 1 },
-        update: {},
-        create: { name: "Human Resourcing", workspace_id: workspace.id, status: "active" },
+    const hr = await prisma.department.create({
+        data: { name: "Human Resourcing", workspace_id: workspace.id, status: "active" },
     });
 
-    const engineering = await prisma.department.upsert({
-        where: { id: 2 },
-        update: {},
-        create: { name: "Engineering", workspace_id: workspace.id, status: "active" },
+    const engineering = await prisma.department.create({
+        data: { name: "Engineering", workspace_id: workspace.id, status: "active" },
     });
 
     // 4. Roles
@@ -77,20 +115,12 @@ const main = async () => {
 
     const roles = await prisma.systemRole.createMany({
         data: [
-            {
-                role: RoleName.SuperAdmin,
-            },
-            {
-                role: RoleName.Admin,
-            },
-            {
-                role: RoleName.ProjectManager,
-            },
-            {
-                role: RoleName.Employee,
-            },
+            { role: RoleName.SuperAdmin },
+            { role: RoleName.Admin },
+            { role: RoleName.ProjectManager },
+            { role: RoleName.Employee },
         ]
-    })
+    });
 
     const superAdminRole = await prisma.systemRole.findFirstOrThrow({
         where: { role: RoleName.SuperAdmin },
@@ -120,17 +150,18 @@ const main = async () => {
             password: hashedGeneralPassword,
             name: envConfig.GENERAL_NAME,
             role_id: superAdminRole.id,
+            is_first_login: false,
             status: 'active'
         }
     })
 
     // 6. Users (workspace-level)
     const admin = await prisma.user.upsert({
-        where: { email: "admin@acme.com" },
+        where: { email: envConfig.ADMIN_EMAIL },
         update: {},
         create: {
             name: "Admin ACME",
-            email: "admin@acme.com",
+            email: envConfig.ADMIN_EMAIL,
             password: hashedGeneralPassword,
             role_id: adminRole.id,
             workspace_id: workspace.id,
@@ -140,11 +171,11 @@ const main = async () => {
     });
 
     const manager = await prisma.user.upsert({
-        where: { email: "manager@acme.com" },
+        where: { email: envConfig.MANAGER_EMAIL },
         update: {},
         create: {
             name: "Project Manager",
-            email: "manager@acme.com",
+            email: envConfig.MANAGER_EMAIL,
             password: hashedGeneralPassword,
             role_id: managerRole.id,
             workspace_id: workspace.id,
@@ -154,11 +185,11 @@ const main = async () => {
     });
 
     const employee = await prisma.user.upsert({
-        where: { email: "employee1@acme.com" },
+        where: { email: envConfig.EMPLOYEE_EMAIL },
         update: {},
         create: {
             name: "Employee One",
-            email: "employee1@acme.com",
+            email: envConfig.EMPLOYEE_EMAIL,
             password: hashedGeneralPassword,
             role_id: employeeRole.id,
             workspace_id: workspace.id,
@@ -170,6 +201,7 @@ const main = async () => {
     // 7. Project
     const project = await prisma.project.create({
         data: {
+            id: generateUuid(),
             name: "Website Revamp",
             workspace_id: workspace.id,
             start_date: new Date(),
@@ -180,73 +212,45 @@ const main = async () => {
 
 
     // 8. Tasks
-    await prisma.task.createMany({
-        data: [
-            {
-                id: generateUuid(),
-                name: "Setup Landing Page",
-                project_id: project.id,
-                start_date: new Date(),
-                due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
-                start_at: new Date(),
-                status: "todo",
-                priority: "medium",
-            },
-            {
-                id: generateUuid(),
-                name: "Integrate Auth System",
-                project_id: project.id,
-                start_date: new Date(),
-                due_date: new Date(new Date().setDate(new Date().getDate() + 14)),
-                start_at: new Date(),
-                status: "doing",
-                priority: "high",
-            },
-        ],
-        skipDuplicates: true,
+    const task1 = await prisma.task.create({
+        data: {
+            id: generateUuid(),
+            name: "Setup Landing Page",
+            project_id: project.id,
+            start_date: new Date(),
+            due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
+            start_at: new Date(),
+            status: "todo",
+            priority: "medium",
+        },
+    });
+    const task2 = await prisma.task.create({
+        data: {
+            id: generateUuid(),
+            name: "Integrate Auth System",
+            project_id: project.id,
+            start_date: new Date(),
+            due_date: new Date(new Date().setDate(new Date().getDate() + 14)),
+            start_at: new Date(),
+            status: "doing",
+            priority: "high",
+        },
     });
 
-    const firstTask = await prisma.task.findFirst({
-        where: { name: "Setup Landing Page", project_id: project.id }
+    await prisma.taskUser.create({
+        data: {
+            task_id: task1.id,
+            user_id: employee.id,
+            assigned_at: new Date(),
+        },
     });
-
-    if (firstTask) {
-        await prisma.taskUser.upsert({
-            where: {
-                task_id_user_id: {
-                    task_id: firstTask.id,
-                    user_id: employee.id
-                }
-            },
-            update: {},
-            create: {
-                task_id: firstTask.id,
-                user_id: employee.id,
-                assigned_at: new Date()
-            }
-        });
-    }
-
-    const secondTask = await prisma.task.findFirst({
-        where: { name: "Integrate Auth System", project_id: project.id }
+    await prisma.taskUser.create({
+        data: {
+            task_id: task2.id,
+            user_id: employee.id,
+            assigned_at: new Date(),
+        },
     });
-
-    if (secondTask) {
-        await prisma.taskUser.upsert({
-            where: {
-                task_id_user_id: {
-                    task_id: secondTask.id,
-                    user_id: employee.id
-                }
-            },
-            update: {},
-            create: {
-                task_id: secondTask.id,
-                user_id: employee.id,
-                assigned_at: new Date()
-            }
-        });
-    }
 
     // 9. Order + Payment
     const order = await prisma.order.create({
