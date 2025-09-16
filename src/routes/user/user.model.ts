@@ -2,8 +2,6 @@ import { UserStatus } from 'src/shared/constants/auth.constant'
 import { UserSchema } from 'src/shared/models/shared-user.model'
 import z from 'zod'
 
-
-
 export const UserCreateSchema = UserSchema.pick({
   name: true,
   email: true,
