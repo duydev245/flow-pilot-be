@@ -10,9 +10,11 @@ import { WorkspaceModule } from './routes/workspace/workspace.module'
 import { ProjectModule } from './routes/project/project.module'
 import { UserModule } from 'src/routes/user/user.module'
 import CustomZodValidationPipe from './shared/pipes/custom-zod-validation.pipe'
+import { FeatureModule } from './routes/feature/feature.module'
+import { PackageModule } from './routes/package/package.module'
 
 @Module({
-  imports: [SharedModule, AuthModule, WorkspaceModule, ProjectModule, UserModule],
+  imports: [SharedModule, AuthModule, WorkspaceModule, ProjectModule, UserModule, FeatureModule, PackageModule],
   controllers: [AppController],
   providers: [
     AppService,
@@ -30,4 +32,4 @@ import CustomZodValidationPipe from './shared/pipes/custom-zod-validation.pipe'
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}
