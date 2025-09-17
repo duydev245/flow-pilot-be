@@ -25,7 +25,6 @@ export class WorkspaceService {
       return SuccessResponse('Get all workspaces successfully', result)
     } catch (error) {
       this.logger.error(error.message)
-
       throw error
     }
   }
