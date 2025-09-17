@@ -168,10 +168,6 @@ export class UserService {
 
   async updateUserBySuperAdmin(userId: string, data: UserUpdateType) {
     try {
-      if (await this.isSuperAdminAccount(userId)) {
-        throw SuperAdminAccountException;
-      }
-
       const result = await this.userRepository.updateUserBySuperAdmin(userId, data)
 
       return SuccessResponse('Update user successful', result)
