@@ -11,12 +11,14 @@ export const WorkspaceSchema = z.object({
     if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
     return arg
   }, z.date()),
-  expire_date: z.preprocess((arg) => {
-    if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
-    return arg
-  }, z.date()),
+  expire_date: z
+    .preprocess((arg) => {
+      if (typeof arg === 'string' || arg instanceof Date) return new Date(arg)
+      return arg
+    }, z.date())
+    .nullable(),
   created_at: z.date().default(() => new Date()),
-  updated_at: z.date().nullable(),
+  updated_at: z.date().optional(),
   status: z.enum([PackageStatus.active, PackageStatus.inactive]).default(PackageStatus.active),
 })
 
@@ -26,7 +28,6 @@ export const WorkspaceCreateSchema = WorkspaceSchema.pick({
   company_name: true,
   package_id: true,
   start_date: true,
-  expire_date: true,
   status: true,
 })
 
