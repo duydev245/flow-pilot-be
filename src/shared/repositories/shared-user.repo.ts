@@ -16,6 +16,14 @@ export class SharedUserRepository {
         })
     }
 
+    findUniqueByWorkspace(where: { id: string, workspace_id: string }): Promise<UserType | null> {
+        return this.prismaService.user.findFirst({
+            where: {
+                ...where,
+            },
+        })
+    }
+
     findUniqueWithRole(where: WhereUniqueUserType): Promise<UserWithRoleType | null> {
         return this.prismaService.user.findFirst({
             where: {

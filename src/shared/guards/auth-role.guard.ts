@@ -12,6 +12,7 @@ import {
 import { ROLES_KEY } from '../decorators/roles.decorator'
 import { UserWithRoleType } from 'src/shared/models/shared-user.model'
 import { SharedUserRepository } from '../repositories/shared-user.repo'
+import { validate as isUuid } from 'uuid'
 
 @Injectable()
 export class AuthRoleGuard implements CanActivate {
@@ -44,7 +45,7 @@ export class AuthRoleGuard implements CanActivate {
     }
 
     const { user_id } = payload
-    if (!user_id) {
+    if (!user_id || !isUuid(user_id)) {
       throw InvalidExpiredAccessTokenException
     }
 
