@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
-import { UserCreateBodyDto, UserDeleteBodyDto, UserUpdateBodyDto } from 'src/routes/user/user.dto'
+import { UserCreateBodyDto, UserCreateByAdminBodyDto, UserDeleteBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto } from 'src/routes/user/user.dto'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { GetRoleUser, GetUserId, GetWorkSpaceId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -15,14 +15,7 @@ import { UserService } from './user.service'
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
-  @Get()
-  @Roles([RoleName.SuperAdmin, RoleName.Admin])
-  @UseGuards(AuthRoleGuard)
-  @ZodSerializerDto(MessageResDTO)
-  getAllUsers(@GetRoleUser() role: string, @GetWorkSpaceId() workspaceId: string) {
-    return this.userService.getAllUsers(role, workspaceId)
-  }
-
+  // my profile
   @Get('/me')
   @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.ProjectManager, RoleName.Employee])
   @UseGuards(AuthRoleGuard)
@@ -31,45 +24,115 @@ export class UserController {
     return this.userService.getMe(userId)
   }
 
-  @Get(':id')
-  @Roles([RoleName.SuperAdmin, RoleName.Admin])
-  @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
-  @ZodSerializerDto(MessageResDTO)
-  getUserById(@Param('id') userId: string) {
-    return this.userService.getUserById(userId)
-  }
+  // @Put('/update-profile')
+  // @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.ProjectManager, RoleName.Employee])
+  // @UseGuards(AuthRoleGuard)
+  // @ZodSerializerDto(MessageResDTO)
+  // updateProfile(
+  //   @Body() body: UserUpdateBodyDto,
+  //   @GetUserId() userId: string,
+  // ) {
+  //   return this.userService.updateProfile(userId, body)
+  // }
 
-  @Post('create')
-  @Roles([RoleName.SuperAdmin, RoleName.Admin])
+  // Super admin routes
+  @Get('/super-admin')
+  @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  createUser(
+  getAllUsersBySuperAdmin(@GetUserId() actorId: string) {
+    return this.userService.getAllUsersBySuperAdmin(actorId)
+  }
+
+  @Get('/super-admin/:id')
+  @Roles([RoleName.SuperAdmin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getUserByIdForSuperAdmin(@Param('id') userId: string) {
+    return this.userService.getUserBySuperAdmin(userId)
+  }
+
+  @Post('/super-admin/create')
+  @Roles([RoleName.SuperAdmin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  createUserBySuperAdmin(
     @Body() body: UserCreateBodyDto,
-    @GetRoleUser() role: string,
   ) {
-    return this.userService.createUser(body, role)
+    return this.userService.createUserBySuperAdmin(body)
   }
 
-  @Put(':id')
-  @Roles([RoleName.SuperAdmin, RoleName.Admin])
-  @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
+  @Put('/super-admin/delete/:id')
+  @Roles([RoleName.SuperAdmin])
+  @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  updateUser(
-    @Body() body: UserUpdateBodyDto,
+  deleteUserBySuperAdmin(
     @Param('id') userId: string,
-    @GetRoleUser() role: string,
-  ) {
-    return this.userService.updateUser(userId, body, role)
-  }
-
-  @Put('/delete/:id')
-  @Roles([RoleName.SuperAdmin, RoleName.Admin])
-  @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
-  @ZodSerializerDto(MessageResDTO)
-  deleteUser(
     @Body() body: UserDeleteBodyDto,
-    @Param('id') userId: string,
   ) {
     return this.userService.deleteUser(userId, body)
   }
+
+  @Put('/super-admin/:id')
+  @Roles([RoleName.SuperAdmin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  updateUserBySuperAdmin(
+    @Param('id') userId: string,
+    @Body() body: UserUpdateBodyDto,
+  ) {
+    return this.userService.updateUserBySuperAdmin(userId, body)
+  }
+
+  // Admin routes
+  @Get('/admin')
+  @Roles([RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getAllUsersByAdmin(@GetUserId() actorId: string, @GetWorkSpaceId() workspaceId: string) {
+    return this.userService.getAllUsersByAdmin(actorId, workspaceId)
+  }
+
+  @Get('/admin/:id')
+  @Roles([RoleName.Admin])
+  @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getUserById(@Param('id') userId: string, @GetWorkSpaceId() workspaceId: string) {
+    return this.userService.getUserByAdmin(userId, workspaceId)
+  }
+
+  @Post('/admin/create')
+  @Roles([RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  createUserByAdmin(
+    @Body() body: UserCreateByAdminBodyDto,
+    @GetWorkSpaceId() workspaceId: string
+  ) {
+    return this.userService.createUserByAdmin(body, workspaceId)
+  }
+
+  @Put('/admin/delete/:id')
+  @Roles([RoleName.Admin])
+  @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
+  @ZodSerializerDto(MessageResDTO)
+  deleteUserByAdmin(
+    @Param('id') userId: string,
+    @Body() body: UserDeleteBodyDto,
+  ) {
+    return this.userService.deleteUser(userId, body)
+  }
+
+  @Put('/admin/:id')
+  @Roles([RoleName.Admin])
+  @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
+  @ZodSerializerDto(MessageResDTO)
+  updateUser(
+    @Param('id') userId: string,
+    @Body() body: UserUpdateByAdminBodyDto,
+    @GetWorkSpaceId() workspaceId: string
+  ) {
+    return this.userService.updateUserByAdmin(userId, workspaceId, body)
+  }
+
 }

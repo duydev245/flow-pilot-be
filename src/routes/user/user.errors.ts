@@ -55,3 +55,8 @@ export const WorkspaceRequiredError = new BadRequestException({
   code: 'BAD_REQUEST',
   message: 'Workspace ID is required',
 })
+
+export const SuperAdminAccountException = new ForbiddenException({
+  code: 'FORBIDDEN_EXCEPTION',
+  message: 'Cannot perform this action',
+})

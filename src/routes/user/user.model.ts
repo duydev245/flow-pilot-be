@@ -1,3 +1,4 @@
+import { UserStatus } from 'src/shared/constants/auth.constant'
 import { UserSchema } from 'src/shared/models/shared-user.model'
 import z from 'zod'
 
@@ -8,12 +9,35 @@ export const UserCreateSchema = UserSchema.pick({
   workspace_id: true,
 }).strict()
 
-export const UserUpdateSchema = UserSchema.omit({ email: true }).partial().strict()
+export const UserCreateByAdminSchema = UserSchema.pick({
+  name: true,
+  email: true,
+  role_id: true,
+}).strict()
 
-export const UserDeleteSchema = UserSchema.pick({
-  status: true,
+export const UserUpdateSchema = z.object({
+  name: z.string().optional(),
+  email: z.email().optional(),
+  avatar_url: z.string().optional().nullable(),
+  department_id: z.number().optional().nullable(),
+  role_id: z.number().optional(),
+  workspace_id: z.uuid().optional(),
 })
 
+export const UserUpdateByAdminSchema = z.object({
+  name: z.string().optional(),
+  email: z.email().optional(),
+  avatar_url: z.string().optional().nullable(),
+  department_id: z.number().optional().nullable(),
+  role_id: z.number().optional(),
+})
+
+export const UserDeleteSchema = z.object({
+  status: z.enum([UserStatus.inactive]),
+}).strict()
+
 export type UserCreateType = z.infer<typeof UserCreateSchema>
+export type UserCreateByAdminType = z.infer<typeof UserCreateByAdminSchema>
 export type UserUpdateType = z.infer<typeof UserUpdateSchema>
+export type UserUpdateByAdminType = z.infer<typeof UserUpdateByAdminSchema>
 export type UserDeleteType = z.infer<typeof UserDeleteSchema>
