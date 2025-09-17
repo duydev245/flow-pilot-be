@@ -5,7 +5,7 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
 import { Roles } from 'src/shared/decorators/roles.decorator'
-import { WorkspaceBodyDto, WorkspaceDeleteDto, WorkspaceUpdateDto } from './workspace.dto'
+import { WorkspaceBodyDto, WorkspaceDeleteDto, WorkspaceUpdateDto, ExtendWorkspaceDto } from './workspace.dto'
 import { ApiTags } from '@nestjs/swagger'
 
 @Controller('workspace')
@@ -44,6 +44,13 @@ export class WorkspaceController {
   @ZodSerializerDto(MessageResDTO)
   updateWorkspace(@Body() body: WorkspaceUpdateDto, @Param('id') id: string) {
     return this.workspaceService.updateWorkspace(id, body)
+  }
+  @Put('/extend/:id')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.SuperAdmin])
+  @ZodSerializerDto(MessageResDTO)
+  ExtendWorkspace(@Body() body: ExtendWorkspaceDto, @Param('id') id: string) {
+    return this.workspaceService.extendWorkspace(id, body)
   }
 
   @Put('/delete/:id')
