@@ -1,0 +1,67 @@
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
+import { Request } from 'express'
+import { TokenService } from '../services/token.service'
+import { IAccessTokenPayload } from '../types/jwt.type'
+import {
+  AccessTokenRequiredException,
+  ForbiddenResourceException,
+  InvalidExpiredAccessTokenException,
+  UserNotFoundException,
+} from '../error'
+import { ROLES_KEY } from '../decorators/roles.decorator'
+import { UserWithRoleType } from 'src/shared/models/shared-user.model'
+import { SharedUserRepository } from '../repositories/shared-user.repo'
+import { validate as isUuid } from 'uuid'
+
+@Injectable()
+export class AuthRoleGuard implements CanActivate {
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly tokenService: TokenService,
+    private readonly sharedUserRepository: SharedUserRepository,
+  ) { }
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ])
+    if (!requiredRoles || requiredRoles.length === 0) {
+      return true
+    }
+
+    const request = context.switchToHttp().getRequest<Request>()
+    const accessToken = request.headers['authorization']?.replace('Bearer ', '')
+    if (!accessToken) {
+      throw AccessTokenRequiredException
+    }
+
+    let payload: IAccessTokenPayload
+    try {
+      payload = await this.tokenService.verifyAccessToken(accessToken)
+    } catch (err) {
+      throw InvalidExpiredAccessTokenException
+    }
+
+    const { user_id } = payload
+    if (!user_id || !isUuid(user_id)) {
+      throw InvalidExpiredAccessTokenException
+    }
+
+    // Query user and their role from DB
+    const user: UserWithRoleType | null = await this.sharedUserRepository.findUniqueWithRole({ id: user_id })
+    if (!user || !user.role) {
+      throw UserNotFoundException
+    }
+
+    const hasRole = requiredRoles.includes(user.role.role)
+    if (!hasRole) {
+      throw ForbiddenResourceException
+    }
+
+    // Attach user to request for further use
+    ; (request as any).user = user
+    return true
+  }
+}

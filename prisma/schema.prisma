@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  // output   = "../generated/prisma"
 }
 
 datasource db {
@@ -9,34 +9,48 @@ datasource db {
 }
 
 model SystemRole {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   role       String
-  created_at DateTime
-  updated_at DateTime
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
   users      User[]
 }
 
 model Package {
-  id         String       @id @default(uuid()) @db.Uuid
-  name       String
-  price      Float
-  created_at DateTime
-  updated_at DateTime
-  status     BinaryStatus
-  orders     Order[]
-  workspaces Workspace[]
+  id                 String       @id @default(uuid()) @db.Uuid
+  name               String       @unique
+  duration_in_months Int          @default(1)
+  price              Float
+  description        String?
+  created_at         DateTime     @default(now())
+  updated_at         DateTime?    @updatedAt
+  status             BinaryStatus
+  orders             Order[]
+  workspaces         Workspace[]
+  features           Feature[]
+}
+
+model Feature {
+  id          String       @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  package_id  String       @db.Uuid
+  created_at  DateTime     @default(now())
+  updated_at  DateTime?    @updatedAt
+  status      BinaryStatus
+  package     Package      @relation(fields: [package_id], references: [id])
 }
 
 model Workspace {
   id            String         @id @default(uuid()) @db.Uuid
-  name          String
-  company_code  String
+  name          String         @unique
+  company_code  String?        @unique
   company_name  String
   package_id    String         @db.Uuid
   start_date    DateTime
   expire_date   DateTime
-  created_at    DateTime
-  updated_at    DateTime
+  created_at    DateTime       @default(now())
+  updated_at    DateTime?      @updatedAt
   status        BinaryStatus
   departments   Department[]
   notifications Notification[] @relation("NotificationWorkspace")
@@ -46,6 +60,7 @@ model Workspace {
   package       Package        @relation(fields: [package_id], references: [id])
 
   @@index([package_id])
+  @@index([status])
 }
 
 model Order {
@@ -54,8 +69,8 @@ model Order {
   package_id   String      @db.Uuid
   order_date   DateTime
   total_amount Float
-  created_at   DateTime
-  updated_at   DateTime
+  created_at   DateTime    @default(now())
+  updated_at   DateTime?   @updatedAt
   status       OrderStatus
   package      Package     @relation(fields: [package_id], references: [id])
   workspace    Workspace   @relation(fields: [workspace_id], references: [id])
@@ -70,9 +85,9 @@ model Payment {
   order_id       String        @db.Uuid
   payment_date   DateTime
   amount         Float
-  transaction_id String
-  created_at     DateTime
-  updated_at     DateTime
+  transaction_id String?
+  created_at     DateTime      @default(now())
+  updated_at     DateTime?     @updatedAt
   payment_method PaymentMethod
   status         PaymentStatus
   order          Order         @relation(fields: [order_id], references: [id])
@@ -83,10 +98,10 @@ model Payment {
 model Department {
   id           Int          @id @default(autoincrement())
   name         String
-  description  String
+  description  String?
   workspace_id String       @db.Uuid
-  created_at   DateTime
-  updated_at   DateTime
+  created_at   DateTime     @default(now())
+  updated_at   DateTime?    @updatedAt
   status       BinaryStatus
   workspace    Workspace    @relation(fields: [workspace_id], references: [id])
   users        User[]
@@ -94,19 +109,32 @@ model Department {
   @@index([workspace_id])
 }
 
+model VerificationCode {
+  id    Int                  @id @default(autoincrement())
+  email String               @unique @db.VarChar(500)
+  code  String               @db.VarChar(50)
+  type  VerificationCodeType
+
+  expired_at DateTime
+  created_at DateTime @default(now())
+
+  @@unique([email, type])
+  @@index([expired_at])
+}
+
 model User {
   id                  String                 @id @default(uuid()) @db.Uuid
   name                String
   email               String                 @unique
   password            String
-  avatar_url          String
+  avatar_url          String?
   role_id             Int
-  workspace_id        String                 @db.Uuid
-  department_id       Int
+  workspace_id        String?                @db.Uuid
+  department_id       Int?
   is_first_login      Boolean                @default(true)
   password_changed_at DateTime?
-  created_at          DateTime
-  updated_at          DateTime
+  created_at          DateTime               @default(now())
+  updated_at          DateTime?              @updatedAt
   status              UserStatus
   dailyFocusLogs      DailyFocusLog[]
   microFeedbacks      MicroFeedback[]
@@ -120,9 +148,9 @@ model User {
   taskReviews         TaskReview[]           @relation("ReviewerTaskReviews")
   taskUsers           TaskUser[]
   uploads             UploadFile[]
-  department          Department             @relation(fields: [department_id], references: [id])
+  department          Department?            @relation(fields: [department_id], references: [id])
   role                SystemRole             @relation(fields: [role_id], references: [id])
-  workspace           Workspace              @relation(fields: [workspace_id], references: [id])
+  workspace           Workspace?             @relation(fields: [workspace_id], references: [id])
 
   @@index([role_id])
   @@index([workspace_id])
@@ -130,15 +158,15 @@ model User {
 }
 
 model RefreshToken {
-  id          Int      @id @default(autoincrement())
-  token       String
-  device_info String
-  ip_address  String
-  user_id     String   @db.Uuid
-  expired_at  DateTime
-  created_at  DateTime
-  updated_at  DateTime
-  user        User     @relation(fields: [user_id], references: [id])
+  id          Int       @id @default(autoincrement())
+  token       String    @unique
+  device_info String?
+  ip_address  String?
+  user_id     String    @db.Uuid
+  expired_at  DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+  user        User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
 }
@@ -146,14 +174,14 @@ model RefreshToken {
 model Notification {
   id                   Int              @id @default(autoincrement())
   user_id              String           @db.Uuid
-  title                String
-  content              String
+  title                String?
+  content              String?
   is_read              Boolean          @default(false)
   related_task_id      String?          @db.Uuid
   related_project_id   String?          @db.Uuid
   related_workspace_id String?          @db.Uuid
   created_at           DateTime         @default(now())
-  updated_at           DateTime
+  updated_at           DateTime?        @updatedAt
   type                 NotificationType
   relatedProject       Project?         @relation("NotificationProject", fields: [related_project_id], references: [id])
   relatedTask          Task?            @relation("NotificationTask", fields: [related_task_id], references: [id])
@@ -167,63 +195,63 @@ model Notification {
 }
 
 model MicroFeedback {
-  id         Int      @id @default(autoincrement())
-  user_id    String   @db.Uuid
+  id         Int       @id @default(autoincrement())
+  user_id    String    @db.Uuid
   rating     Int
-  created_at DateTime
-  updated_at DateTime
-  user       User     @relation(fields: [user_id], references: [id])
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  user       User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
 }
 
 model PerformanceData {
-  id                Int      @id @default(autoincrement())
-  user_id           String   @db.Uuid
-  project_id        String   @db.Uuid
-  performance_cycle String
-  working_hours     Float
-  task_completed    Int
-  task_delay_count  Int
-  burnout_index     Float
-  quality_score     Float
-  feedback_score    Float
-  notes             String
-  created_at        DateTime
-  updated_at        DateTime
-  project           Project  @relation(fields: [project_id], references: [id])
-  user              User     @relation(fields: [user_id], references: [id])
+  id                Int       @id @default(autoincrement())
+  user_id           String    @db.Uuid
+  project_id        String    @db.Uuid
+  performance_cycle String?
+  working_hours     Float?
+  task_completed    Int?
+  task_delay_count  Int?
+  burnout_index     Float?
+  quality_score     Float?
+  feedback_score    Float?
+  notes             String?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime? @updatedAt
+  project           Project   @relation(fields: [project_id], references: [id])
+  user              User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
   @@index([project_id])
 }
 
 model OverallPerformance {
-  id               Int      @id @default(autoincrement())
-  user_id          String   @db.Uuid
-  working_hours    Float
-  task_completed   Int
-  task_delay_count Int
-  burnout_index    Float
-  quality_score    Float
-  feedback_score   Float
-  notes            String
-  created_at       DateTime
-  updated_at       DateTime
-  user             User     @relation(fields: [user_id], references: [id])
+  id               Int       @id @default(autoincrement())
+  user_id          String    @db.Uuid
+  working_hours    Float?
+  task_completed   Int?
+  task_delay_count Int?
+  burnout_index    Float?
+  quality_score    Float?
+  feedback_score   Float?
+  notes            String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime? @updatedAt
+  user             User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
 }
 
 model DailyFocusLog {
-  id              Int      @id @default(autoincrement())
-  user_id         String   @db.Uuid
-  date            DateTime @db.Date
+  id              Int       @id @default(autoincrement())
+  user_id         String    @db.Uuid
+  date            DateTime  @db.Date
   focused_minutes Int
-  note            String
-  created_at      DateTime
-  updated_at      DateTime
-  user            User     @relation(fields: [user_id], references: [id])
+  note            String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime? @updatedAt
+  user            User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id, date])
 }
@@ -232,13 +260,13 @@ model Project {
   id            String            @id @default(uuid()) @db.Uuid
   workspace_id  String            @db.Uuid
   name          String
-  description   String
+  description   String?
   start_date    DateTime
   end_date      DateTime
-  process       Int
-  team_size     Int
-  created_at    DateTime
-  updated_at    DateTime
+  process       Int?
+  team_size     Int?
+  created_at    DateTime          @default(now())
+  updated_at    DateTime?         @updatedAt
   status        ProjectStatus
   notifications Notification[]    @relation("NotificationProject")
   performance   PerformanceData[]
@@ -247,6 +275,7 @@ model Project {
   tasks         Task[]
 
   @@index([workspace_id])
+  @@index([workspace_id, status])
 }
 
 model ProjectUser {
@@ -265,14 +294,14 @@ model Task {
   id                    String                 @id @default(uuid()) @db.Uuid
   project_id            String                 @db.Uuid
   name                  String
-  description           String
-  time_spent_in_minutes Int
+  description           String?
+  time_spent_in_minutes Int?
   start_at              DateTime
   completed_at          DateTime?
   start_date            DateTime
   due_date              DateTime
-  created_at            DateTime
-  updated_at            DateTime
+  created_at            DateTime               @default(now())
+  updated_at            DateTime?              @updatedAt
   status                TaskStatus
   priority              TaskPriority
   notifications         Notification[]         @relation("NotificationTask")
@@ -284,6 +313,7 @@ model Task {
   files                 UploadFile[]
 
   @@index([project_id])
+  @@index([project_id, status, due_date])
 }
 
 model TaskUser {
@@ -299,34 +329,34 @@ model TaskUser {
 }
 
 model TaskReview {
-  id             Int      @id @default(autoincrement())
-  task_id        String   @unique @db.Uuid
-  reviewer_id    String   @db.Uuid
+  id             Int       @id @default(autoincrement())
+  task_id        String    @unique @db.Uuid
+  reviewer_id    String    @db.Uuid
   quality_score  Float
-  feedback_score Float?
-  notes          String
-  reviewed_at    DateTime
-  created_at     DateTime
-  updated_at     DateTime
-  reviewer       User     @relation("ReviewerTaskReviews", fields: [reviewer_id], references: [id])
-  task           Task     @relation(fields: [task_id], references: [id])
+  feedback_score Float
+  notes          String?
+  reviewed_at    DateTime  @default(now())
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
+  reviewer       User      @relation("ReviewerTaskReviews", fields: [reviewer_id], references: [id])
+  task           Task      @relation(fields: [task_id], references: [id])
 
   @@index([reviewer_id])
 }
 
 model UploadFile {
-  id          Int      @id @default(autoincrement())
-  task_id     String   @db.Uuid
+  id          Int       @id @default(autoincrement())
+  task_id     String    @db.Uuid
   file_name   String
   file_url    String
-  file_size   Int
-  mime_type   String
-  uploaded_at DateTime
-  uploaded_by String   @db.Uuid
-  created_at  DateTime
-  updated_at  DateTime
-  task        Task     @relation(fields: [task_id], references: [id])
-  uploader    User     @relation(fields: [uploaded_by], references: [id])
+  file_size   Int?
+  mime_type   String?
+  uploaded_at DateTime  @default(now())
+  uploaded_by String    @db.Uuid
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+  task        Task      @relation(fields: [task_id], references: [id])
+  uploader    User      @relation(fields: [uploaded_by], references: [id])
 
   @@index([task_id])
   @@index([uploaded_by])
@@ -337,8 +367,8 @@ model TaskContent {
   task_id    String            @db.Uuid
   user_id    String            @db.Uuid
   content    String
-  created_at DateTime
-  updated_at DateTime
+  created_at DateTime          @default(now())
+  updated_at DateTime?         @updatedAt
   type       TaskContentType
   status     TaskContentStatus
   task       Task              @relation(fields: [task_id], references: [id])
@@ -349,16 +379,16 @@ model TaskContent {
 }
 
 model TaskRejectionHistory {
-  id          Int      @id @default(autoincrement())
-  task_id     String   @db.Uuid
-  rejected_by String   @db.Uuid
+  id          Int       @id @default(autoincrement())
+  task_id     String    @db.Uuid
+  rejected_by String    @db.Uuid
   rejected_at DateTime
   reason      String
   notes       String?
-  created_at  DateTime
-  updated_at  DateTime
-  reviewer    User     @relation(fields: [rejected_by], references: [id])
-  task        Task     @relation(fields: [task_id], references: [id])
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+  reviewer    User      @relation(fields: [rejected_by], references: [id])
+  task        Task      @relation(fields: [task_id], references: [id])
 
   @@index([task_id])
   @@index([rejected_by])
@@ -433,4 +463,9 @@ enum TaskContentStatus {
 enum UserStatus {
   active
   inactive
+}
+
+enum VerificationCodeType {
+  register
+  forgot_password
 }

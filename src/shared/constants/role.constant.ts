@@ -5,6 +5,8 @@ export const RoleName = {
   Employee: 'EMPLOYEE',
 } as const
 
+export type RoleNameType = (typeof RoleName)[keyof typeof RoleName]
+
 export const HTTPMethod = {
   GET: 'GET',
   POST: 'POST',
