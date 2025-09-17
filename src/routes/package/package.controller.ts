@@ -9,7 +9,7 @@ import { PackageBodyDto, PackageDeleteDto, PackageUpdateDto } from 'src/routes/p
 import { ApiTags } from '@nestjs/swagger'
 
 @Controller('package')
-@ApiTags('Package Module')
+@ApiTags('Package')
 export class PackageController {
   constructor(private readonly packageService: PackageService) {}
 
