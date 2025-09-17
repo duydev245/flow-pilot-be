@@ -1,4 +1,4 @@
-import { UnauthorizedException, UnprocessableEntityException } from "@nestjs/common"
+import { ForbiddenException, UnauthorizedException, UnprocessableEntityException } from "@nestjs/common"
 
 // Email related errors
 export const EmailAlreadyExistsException = new UnprocessableEntityException(
@@ -14,3 +14,5 @@ export const EmailNotFoundException = new UnauthorizedException({ code: 'AUTH_EM
 
 // Auth token related errors
 export const RefreshTokenAlreadyUsedException = new UnauthorizedException({ code: 'AUTH_REFRESH_TOKEN_ALREADY_USED', message: 'Refresh Token Already Used' })
+
+export const FirstLoginDefaultPasswordException = new ForbiddenException({ code: 'AUTH_FIRST_LOGIN_DEFAULT_PASSWORD', message: 'You must change your default password before using this feature' })

@@ -1,156 +1,280 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import {
   EmailAlreadyExistsError,
   GetAllUsersError,
   GetUsersByIdError,
+  MissingStatusError,
+  SuperAdminAccountException,
   UserEmailUpdateNotAllowedError,
   UserNotFoundInWorkSpace,
   UserPermissionDeniedError,
   UserRoleNotFoundError,
+  WorkspaceRequiredError,
   WrongUserIdError,
 } from 'src/routes/user/user.errors'
-import { UserCreateType, UserDeleteType, UserUpdateType } from 'src/routes/user/user.model'
+import { UserCreateByAdminType, UserCreateType, UserDeleteType, UserUpdateByAdminType, UserUpdateProfileType, UserUpdateType } from 'src/routes/user/user.model'
+import { generateRandomPassword } from 'src/shared/helpers'
 import { UserRepository } from 'src/routes/user/user.repo'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { SuccessResponse } from 'src/shared/sucess'
 import { validate as isUuid } from 'uuid'
+import { EmailService } from 'src/shared/services/email.service'
+import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
+import { SharedRoleRepository } from 'src/shared/repositories/shared-role.repo'
 
 // 👉 Tóm gọn flow cơ bản:
 //  Authorize(Guard) → Validate (Zod DTO) → Transform (Service) → Business checks (Service) → Persist (DB) (Repository) → Response (Service)
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
-    private readonly userRepository: UserRepository,
     private readonly hashingService: HashingService,
-  ) {}
+    private readonly emailService: EmailService,
+    private readonly userRepository: UserRepository,
+    private readonly sharedUserRepository: SharedUserRepository,
+    private readonly sharedRoleRepository: SharedRoleRepository,
+  ) { }
 
-  async getAllUsers(role: string, workspaceId: string) {
-    let result
-    if (role === RoleName.Admin) {
-      result = await this.userRepository.getAllUsersByWorkspaceId(workspaceId)
-    } else if (role === RoleName.SuperAdmin) {
-      result = await this.userRepository.getAllUsers()
-    } else {
-      throw UserPermissionDeniedError
+  async isSuperAdminAccount(userId: string) {
+    const user = await this.sharedUserRepository.findUniqueWithRole({ id: userId })
+    if (user && user.role.role === RoleName.SuperAdmin) {
+      return true
     }
-
-    if (!result) {
-      throw GetAllUsersError
-    }
-
-    return SuccessResponse('Get all users successful', result)
+    return false
   }
 
-  async getMe(userId: string) {
-    const result = await this.userRepository.getUserById(userId)
-    if (!result) {
-      throw GetUsersByIdError
-    }
+  // delete user (soft delete)
+  async deleteUser(userId: string, body: UserDeleteType) {
+    console.log("🚀 ~ UserService ~ deleteUser ~ body:", body)
+    try {
+      const { status } = body;
 
-    return SuccessResponse('Get my profile successful', result)
-  }
-
-  async getUserById(UserId: string) {
-    if (!isUuid(UserId)) {
-      throw WrongUserIdError
-    }
-
-    const result = await this.userRepository.getUserById(UserId)
-    if (!result) {
-      throw GetUsersByIdError
-    }
-
-    return SuccessResponse('Get user by ID successful', result)
-  }
-
-  // create user là hệ thống tự tạo 1 randomw password
-  // rồi gửi mail cho user (Duy làm phần này)
-  async createUser(data: UserCreateType, role: string, workspaceId: string) {
-    if (await this.userRepository.getUserByEmail(data.email)) {
-      throw EmailAlreadyExistsError
-    }
-
-    const isValidRole = await this.userRepository.getRoleById(+data.role_id)
-    if (!isValidRole) {
-      throw UserRoleNotFoundError
-    }
-
-    if (data.password) {
-      const hashedPassword = await this.hashingService.hash(data.password)
-      data.password = hashedPassword
-    }
-
-    let result
-    if (role === RoleName.Admin) {
-      if (isValidRole.role === RoleName.ProjectManager || isValidRole.role === RoleName.Employee) {
-        result = await this.userRepository.createUserForAdmin(data, workspaceId)
-      } else throw UserPermissionDeniedError
-    } else {
-      result = await this.userRepository.createUserForSuperAdmin(data)
-    }
-    const { password, password_changed_at, ...safeRes } = result // check lại
-    return SuccessResponse('Create user successful', safeRes)
-  }
-
-  async updateUser(UserId: string, data: UserUpdateType, role: string, workspaceId: string) {
-    if (!isUuid(UserId)) {
-      throw WrongUserIdError
-    }
-
-    let isValidRole
-    if (data.role_id) {
-      isValidRole = await this.userRepository.getRoleById(+data.role_id)
-
-      if (!isValidRole) {
-        throw UserRoleNotFoundError
+      if (!isUuid(userId)) {
+        throw WrongUserIdError
       }
 
+      if (!status) {
+        throw MissingStatusError;
+      }
+
+      if (await this.isSuperAdminAccount(userId)) {
+        throw SuperAdminAccountException;
+      }
+
+      await this.sharedUserRepository.update({ id: userId }, { status })
+
+      return SuccessResponse('Delete user successful')
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error;
+    }
+  }
+
+  // profile
+  async getMe(userId: string) {
+    try {
+      const result = await this.userRepository.getUserById(userId)
+
+      return SuccessResponse('Get my profile successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async updateProfile(userId: string, data: UserUpdateProfileType) {
+    try {
+      await this.sharedUserRepository.update({ id: userId }, data)
+      return SuccessResponse('Update profile successful')
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  // Super admin routes
+  async getAllUsersBySuperAdmin(actorId: string) {
+    try {
+      const result = await this.userRepository.getAllUsers(actorId)
+      return SuccessResponse('Get all users successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async getUserBySuperAdmin(UserId: string) {
+    try {
+      if (!isUuid(UserId)) {
+        throw WrongUserIdError
+      }
+
+      if (await this.isSuperAdminAccount(UserId)) {
+        throw SuperAdminAccountException;
+      }
+
+      const result = await this.userRepository.getUserById(UserId)
+
+      return SuccessResponse('Get user by ID successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async createUserBySuperAdmin(data: UserCreateType) {
+    try {
+      const { email, name, role_id, workspace_id } = data
+
+      if (!workspace_id) {
+        throw WorkspaceRequiredError;
+      }
+
+      // Kiểm tra email đã tồn tại chưa
+      if (await this.sharedUserRepository.findUnique({ email })) {
+        throw EmailAlreadyExistsError;
+      }
+
+      // Kiểm tra role_id có hợp lệ không
+      const isValidRole = await this.sharedRoleRepository.findUnique({ id: role_id });
+      if (!isValidRole) {
+        throw UserRoleNotFoundError;
+      }
+
+      // Luôn tạo password random, hash rồi truyền vào repo
+      const rawPassword = generateRandomPassword();
+      const hashedPassword = await this.hashingService.hash(rawPassword);
+
+      // Tạo object mới có password
+      const dataWithPassword = { ...data, password: hashedPassword };
+      await this.userRepository.createUser(dataWithPassword);
+
+      // Có thể gửi mail chứa rawPassword cho user ở đây nếu cần
+      await this.emailService.sendNewAccountEmail({
+        email,
+        name,
+        password: rawPassword,
+      });
+
+      return SuccessResponse('Create user successful');
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async updateUserBySuperAdmin(userId: string, data: UserUpdateType) {
+    try {
+      const result = await this.userRepository.updateUserBySuperAdmin(userId, data)
+
+      return SuccessResponse('Update user successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  // Admin routes
+  async getAllUsersByAdmin(actorId: string, workspaceId: string) {
+    try {
+      const result = await this.userRepository.getAllUsersByWorkspaceId(actorId, workspaceId)
+      return SuccessResponse('Get all users successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async getUserByAdmin(userId: string, workspaceId: string) {
+    try {
+      if (await this.isSuperAdminAccount(userId)) {
+        throw SuperAdminAccountException
+      }
+
+      const result = await this.userRepository.getUserByAdmin({ id: userId, workspace_id: workspaceId })
+      return SuccessResponse('Get user by ID successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async createUserByAdmin(data: UserCreateByAdminType, workspaceId: string) {
+    try {
+      const { email, name, role_id } = data
+
+      // Kiểm tra email đã tồn tại chưa
+      if (await this.sharedUserRepository.findUnique({ email })) {
+        throw EmailAlreadyExistsError;
+      }
+
+      // Kiểm tra role_id có hợp lệ không
+      const isValidRole = await this.sharedRoleRepository.findUnique({ id: role_id });
+      if (!isValidRole) {
+        throw UserRoleNotFoundError;
+      }
+
+      // Kiểm tra quyền tạo user
       if (
-        role === RoleName.Admin &&
         isValidRole.role !== RoleName.ProjectManager &&
         isValidRole.role !== RoleName.Employee
       ) {
-        throw UserPermissionDeniedError
+        throw UserPermissionDeniedError;
       }
-    }
 
-    if (data.password) {
-      const hashedPassword = await this.hashingService.hash(data.password)
-      data.password = hashedPassword
-    }
+      // Luôn tạo password random, hash rồi truyền vào repo
+      const rawPassword = generateRandomPassword();
+      const hashedPassword = await this.hashingService.hash(rawPassword);
 
-    let result
-    if (role === RoleName.Admin) {
-      result = await this.userRepository.updateUserByAdmin(UserId, data, workspaceId)
-    } else {
-      result = await this.userRepository.updateUserBySuperAdmin(UserId, data)
-    }
+      // Tạo object mới có password
+      const dataWithPassword = { ...data, password: hashedPassword, workspace_id: workspaceId };
+      await this.userRepository.createUser(dataWithPassword);
 
-    return SuccessResponse('Update user successful', result)
+      // Có thể gửi mail chứa rawPassword cho user ở đây nếu cần
+      await this.emailService.sendNewAccountEmail({
+        email,
+        name,
+        password: rawPassword,
+      });
+
+      return SuccessResponse('Create user successful');
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
   }
 
-  async deleteUser(UserId: string, body: UserDeleteType, role: string, workspaceId: string) {
-    if (!isUuid(UserId)) {
-      throw WrongUserIdError
-    }
+  async updateUserByAdmin(userId: string, workspaceId: string, data: UserUpdateByAdminType) {
+    try {
+      if (await this.isSuperAdminAccount(userId)) {
+        throw SuperAdminAccountException;
+      }
 
-    let result
-    if (role === RoleName.SuperAdmin) {
-      result = await this.userRepository.deleteUserBySuperAdmim(UserId, body.status)
-    } else {
-      result = await this.userRepository.deleteUserByAdmin(UserId, workspaceId)
-    }
+      if (data.role_id) {
+        const isValidRole = await this.sharedRoleRepository.findUnique({ id: data.role_id });
 
-    return SuccessResponse('Change user status successful', result)
+        if (!isValidRole) {
+          throw UserRoleNotFoundError;
+        }
+
+        if (
+          isValidRole.role !== RoleName.ProjectManager &&
+          isValidRole.role !== RoleName.Employee
+        ) {
+          throw UserPermissionDeniedError;
+        }
+      }
+
+      const result = await this.userRepository.updateUserByAdmin({ id: userId, workspace_id: workspaceId }, data)
+
+      return SuccessResponse('Update user successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
   }
 
-  async checkUserInWorkspace(userId: string, workspaceId: string) {
-    const result = await this.userRepository.checkUserInWorkspace(userId, workspaceId)
-    if (!result) {
-      throw UserNotFoundInWorkSpace
-    }
-    return true
-  }
 }

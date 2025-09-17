@@ -3,7 +3,7 @@ import { HashingService } from 'src/shared/services/hashing.service';
 import { ChangePasswordBodyType, ForgotPasswordBodyType, LoginBodyType, SendOTPBodyType, VerifyOTPBodyType } from './auth.model';
 import { TokenService } from 'src/shared/services/token.service';
 import { AuthRepository } from './auth.repo';
-import { EmailNotFoundException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
+import { EmailNotFoundException, FirstLoginDefaultPasswordException, InvalidCredentialsException, RefreshTokenAlreadyUsedException } from './auth.error';
 import { ExpiredOTPException, InvalidOTPException, InvalidPasswordException, UnauthorizedAccessException, UserNotFoundException } from 'src/shared/error';
 import { SuccessResponse } from 'src/shared/sucess';
 import { generateOTP, isNotFoundPrismaError } from 'src/shared/helpers';
@@ -14,7 +14,6 @@ import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant';
 import { addMilliseconds } from 'date-fns';
 import ms from 'ms';
 import envConfig from 'src/shared/config';
-import id from 'zod/v4/locales/id.js';
 
 @Injectable()
 export class AuthService {
@@ -76,6 +75,7 @@ export class AuthService {
           accessToken,
           refreshToken,
           role: user.role.role.toUpperCase(),
+          wsid: user.workspace_id ? user.workspace_id : null,
           isFirstLogin: user.is_first_login
         }
       )
@@ -142,7 +142,8 @@ export class AuthService {
         {
           accessToken,
           refreshToken,
-          role: user.role.role.toUpperCase()
+          role: user.role.role.toUpperCase(),
+          wsid: user.workspace_id ? user.workspace_id : null,
         }
       )
     } catch (error) {
@@ -217,6 +218,11 @@ export class AuthService {
         throw EmailNotFoundException;
       }
 
+      // Block actions for first-login accounts
+      if (user?.is_first_login) {
+        throw FirstLoginDefaultPasswordException;
+      }
+
       // Generate OTP
       const code = generateOTP()
       await this.authRepository.createVerificationCode({
@@ -271,7 +277,7 @@ export class AuthService {
   async changePassword(body: ChangePasswordBodyType) {
     try {
       const { email, newPassword } = body;
-      
+
       // Check if email exists
       const user = await this.sharedUserRepository.findUnique({
         email
@@ -289,6 +295,7 @@ export class AuthService {
         id: user.id
       }, {
         password: hashedNewPassword,
+        password_changed_at: new Date(),
         is_first_login: false
       });
 

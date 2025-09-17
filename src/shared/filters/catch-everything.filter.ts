@@ -19,23 +19,29 @@ export class CatchEverythingFilter implements ExceptionFilter {
 
         const ctx = host.switchToHttp();
 
-        let httpStatus = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+        let status = HttpStatus.INTERNAL_SERVER_ERROR;
+        let payload: Record<string, any> = { message: 'Internal Server Error' };
 
-        let message = exception instanceof HttpException ? exception.getResponse() : 'Internal Server Error'
+        if (exception instanceof HttpException) {
+            status = exception.getStatus();
+            const res = exception.getResponse();
 
-        if (isUniqueConstraintPrismaError(exception)) {
-            httpStatus = HttpStatus.CONFLICT
-            message = 'Record is already existed!'
+            payload = typeof res === 'string' ? { message: res } : (res as Record<string, any>);
+            const { statusCode: _ignored, ...rest } = payload;
+            payload = rest;
+        } else if (isUniqueConstraintPrismaError(exception)) {
+            status = HttpStatus.CONFLICT;
+            payload = { message: 'Record is already existed!' };
         }
 
         const responseBody = {
             success: false,
-            statusCode: httpStatus,
-            message,
+            statusCode: status,
+            ...payload,
             timestamp: new Date().toISOString(),
             path: httpAdapter.getRequestUrl(ctx.getRequest()),
         };
 
-        httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
+        httpAdapter.reply(ctx.getResponse(), responseBody, status);
     }
 }
