@@ -33,7 +33,7 @@ export class FeatureController {
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  createFeature(@Body() body: any) {
+  createFeature(@Body() body: FeatureBodyDto) {
     return this.featureService.createFeature(body)
   }
   @Put(':id')

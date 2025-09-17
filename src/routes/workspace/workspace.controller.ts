@@ -14,7 +14,6 @@ export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 
   @Get()
-  @ZodSerializerDto(MessageResDTO)
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
