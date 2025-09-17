@@ -1,12 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common'
 import {
   EmailAlreadyExistsError,
-  GetAllUsersError,
-  GetUsersByIdError,
   MissingStatusError,
   SuperAdminAccountException,
-  UserEmailUpdateNotAllowedError,
-  UserNotFoundInWorkSpace,
   UserPermissionDeniedError,
   UserRoleNotFoundError,
   WorkspaceRequiredError,
@@ -48,7 +44,6 @@ export class UserService {
 
   // delete user (soft delete)
   async deleteUser(userId: string, body: UserDeleteType) {
-    console.log("🚀 ~ UserService ~ deleteUser ~ body:", body)
     try {
       const { status } = body;
 

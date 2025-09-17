@@ -7,8 +7,7 @@ const CustomZodValidationPipe: typeof ZodValidationPipe = createZodValidationPip
     createValidationException: (error: ZodError) => {
         // format zod error issues
         const formattedErrors = error.issues.map((issue) => ({
-            field: issue.input,
-            path: issue.path.join('.'),
+            field: issue.path.join('.'),
             message: issue.message,
         }))
 

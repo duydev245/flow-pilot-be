@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { UserCreateType, UserUpdateType } from 'src/routes/user/user.model'
-import { UserStatus, UserStatusType } from 'src/shared/constants/auth.constant'
+import { UserUpdateType } from 'src/routes/user/user.model'
+import { UserStatus } from 'src/shared/constants/auth.constant'
+import { RoleNameId } from 'src/shared/constants/role.constant'
 import { UserType } from 'src/shared/models/shared-user.model'
 import { PrismaService } from 'src/shared/services/prisma.service'
 
@@ -34,8 +35,8 @@ export class UserRepository {
         id: { not: actorId },
         workspace_id: workspaceId,
         role_id: {
-          not: 1,
-          in: [2, 3, 4], // Exclude SuperAdmin and only include Admin, ProjectManager, Employee
+          not: RoleNameId.SuperAdmin, // exclude super admin
+          in: [RoleNameId.Admin, RoleNameId.ProjectManager, RoleNameId.Employee], // include only these roles
         },
       },
       select: {

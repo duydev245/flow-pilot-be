@@ -7,6 +7,15 @@ export const RoleName = {
 
 export type RoleNameType = (typeof RoleName)[keyof typeof RoleName]
 
+export const RoleNameId = {
+  SuperAdmin: 1,
+  Admin: 2,
+  ProjectManager: 3,
+  Employee: 4,
+} as const
+
+export type RoleNameIdType = (typeof RoleNameId)[keyof typeof RoleNameId]
+
 export const HTTPMethod = {
   GET: 'GET',
   POST: 'POST',
