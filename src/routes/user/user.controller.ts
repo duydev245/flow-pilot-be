@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
-import { UserCreateBodyDto, UserCreateByAdminBodyDto, UserDeleteBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto } from 'src/routes/user/user.dto'
+import { UserCreateBodyDto, UserCreateByAdminBodyDto, UserDeleteBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto, UserUpdateProfileBodyDto } from 'src/routes/user/user.dto'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { GetRoleUser, GetUserId, GetWorkSpaceId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -24,16 +24,16 @@ export class UserController {
     return this.userService.getMe(userId)
   }
 
-  // @Put('/update-profile')
-  // @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.ProjectManager, RoleName.Employee])
-  // @UseGuards(AuthRoleGuard)
-  // @ZodSerializerDto(MessageResDTO)
-  // updateProfile(
-  //   @Body() body: UserUpdateBodyDto,
-  //   @GetUserId() userId: string,
-  // ) {
-  //   return this.userService.updateProfile(userId, body)
-  // }
+  @Put('/update-profile')
+  @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.ProjectManager, RoleName.Employee])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  updateProfile(
+    @GetUserId() userId: string,
+    @Body() body: UserUpdateProfileBodyDto,
+  ) {
+    return this.userService.updateProfile(userId, body)
+  }
 
   // Super admin routes
   @Get('/super-admin')

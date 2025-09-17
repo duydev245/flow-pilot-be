@@ -115,105 +115,22 @@ export class UserRepository {
     })
   }
 
-  // getRoleById(roleId: number) {
-  //   return this.prismaService.systemRole.findUnique({
-  //     where: {
-  //       id: roleId,
-  //     },
-  //   })
-  // }
-
-  // updateUserBySuperAdmin(userId: string, data: UserUpdateType) {
-  //   return this.prismaService.user.update({
-  //     where: {
-  //       id: userId,
-  //     },
-  //     data,
-  //     select: {
-  //       id: true,
-  //       name: true,
-  //       email: true,
-  //       workspace_id: true,
-  //       avatar_url: true,
-  //       status: true,
-  //       created_at: true,
-  //       updated_at: true,
-  //     },
-  //   })
-  // }
-
-  // updateUserByAdmin(userId: string, data: UserUpdateType, workspaceId: string) {
-  //   return this.prismaService.user.update({
-  //     where: {
-  //       id: userId,
-  //       workspace_id: workspaceId,
-  //     },
-  //     data,
-  //     select: {
-  //       id: true,
-  //       name: true,
-  //       email: true,
-  //       workspace_id: true,
-  //       avatar_url: true,
-  //       status: true,
-  //       created_at: true,
-  //       updated_at: true,
-  //     },
-  //   })
-  // }
-
-
-
-  // deleteUser(userId: string, status: UserStatusType) {
-  //   return this.prismaService.user.update({
-  //     where: {
-  //       id: userId,
-  //     },
-  //     data: {
-  //       status,
-  //     }
-  //   })
-  // }
-
-  // deleteUserByAdmin(userId: string, workspaceId: string) {
-  //   return this.prismaService.user.update({
-  //     where: {
-  //       id: userId,
-  //       workspace_id: workspaceId,
-  //     },
-  //     data: {
-  //       workspace_id: null,
-  //     },
-  //     select: {
-  //       id: true,
-  //       name: true,
-  //       email: true,
-  //       workspace_id: true,
-  //       avatar_url: true,
-  //       status: true,
-  //       created_at: true,
-  //       updated_at: true,
-  //     },
-  //   })
-  // }
-
-  // createUserForAdmin(data: Pick<UserType, 'name' | 'email' | 'password' | 'role_id'>, workspaceId: string) {
-  //   return this.prismaService.user.create({
-  //     data: {
-  //       ...data,
-  //       workspace_id: workspaceId,
-  //       status: UserStatus.active,
-  //     },
-  //     select: {
-  //       id: true,
-  //       name: true,
-  //       email: true,
-  //       workspace_id: true,
-  //       avatar_url: true,
-  //       status: true,
-  //       created_at: true,
-  //       updated_at: true,
-  //     },
-  //   })
-  // }
+  updateUserBySuperAdmin(userId: string, data: UserUpdateType) {
+    return this.prismaService.user.update({
+      where: {
+        id: userId,
+      },
+      data,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+        department_id: true,
+        role_id: true,
+        workspace_id: true,
+        status: true,
+      },
+    })
+  }
 }

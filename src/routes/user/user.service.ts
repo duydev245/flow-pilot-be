@@ -12,7 +12,7 @@ import {
   WorkspaceRequiredError,
   WrongUserIdError,
 } from 'src/routes/user/user.errors'
-import { UserCreateByAdminType, UserCreateType, UserDeleteType, UserUpdateByAdminType, UserUpdateType } from 'src/routes/user/user.model'
+import { UserCreateByAdminType, UserCreateType, UserDeleteType, UserUpdateByAdminType, UserUpdateProfileType, UserUpdateType } from 'src/routes/user/user.model'
 import { generateRandomPassword } from 'src/shared/helpers'
 import { UserRepository } from 'src/routes/user/user.repo'
 import { RoleName } from 'src/shared/constants/role.constant'
@@ -79,6 +79,16 @@ export class UserService {
       const result = await this.userRepository.getUserById(userId)
 
       return SuccessResponse('Get my profile successful', result)
+    } catch (error) {
+      this.logger.error(error.message);
+      throw error;
+    }
+  }
+
+  async updateProfile(userId: string, data: UserUpdateProfileType) {
+    try {
+      await this.sharedUserRepository.update({ id: userId }, data)
+      return SuccessResponse('Update profile successful')
     } catch (error) {
       this.logger.error(error.message);
       throw error;
@@ -162,7 +172,7 @@ export class UserService {
         throw SuperAdminAccountException;
       }
 
-      const result = await this.sharedUserRepository.update({ id: userId }, data)
+      const result = await this.userRepository.updateUserBySuperAdmin(userId, data)
 
       return SuccessResponse('Update user successful', result)
     } catch (error) {
