@@ -1,4 +1,3 @@
-import { Package } from './../../../node_modules/.prisma/client/index.d'
 import { PackageStatus } from 'src/shared/constants/common.constant'
 import z from 'zod'
 

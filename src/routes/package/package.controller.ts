@@ -9,7 +9,7 @@ import { PackageBodyDto, PackageDeleteDto, PackageUpdateDto } from 'src/routes/p
 import { ApiTags } from '@nestjs/swagger'
 
 @Controller('package')
-@ApiTags(' Module')
+@ApiTags('Package')
 export class PackageController {
   constructor(private readonly packageService: PackageService) {}
 
@@ -53,8 +53,6 @@ export class PackageController {
   @Roles([RoleName.SuperAdmin])
   @ZodSerializerDto(MessageResDTO)
   deletePackage(@Body() body: PackageDeleteDto, @Param('id') id: string) {
-    console.log('body: ', body)
-    console.log('id: ', id)
     return this.packageService.deletePackage(id, body)
   }
 }
