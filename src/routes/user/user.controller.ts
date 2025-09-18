@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
-import { UserCreateBodyDto, UserCreateByAdminBodyDto, UserDeleteBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto, UserUpdateProfileBodyDto } from 'src/routes/user/user.dto'
+import { ActiveUserBodyDTO, UserCreateBodyDto, UserCreateByAdminBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto, UserUpdateProfileBodyDto } from 'src/routes/user/user.dto'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { GetUserId, GetWorkSpaceId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -62,15 +62,25 @@ export class UserController {
     return this.userService.createUserBySuperAdmin(body)
   }
 
-  @Put('/super-admin/delete/:id')
+  @Delete('/super-admin/delete/:id')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   deleteUserBySuperAdmin(
     @Param('id') userId: string,
-    @Body() body: UserDeleteBodyDto,
   ) {
-    return this.userService.deleteUser(userId, body)
+    return this.userService.deleteUser(userId)
+  }
+
+  @Patch('/super-admin/active-user/:id')
+  @Roles([RoleName.SuperAdmin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  activeUserBySuperAdmin(
+    @Param('id') userId: string,
+    @Body() body: ActiveUserBodyDTO
+  ) {
+    return this.userService.activeUser(userId, body)
   }
 
   @Put('/super-admin/:id')
@@ -112,15 +122,25 @@ export class UserController {
     return this.userService.createUserByAdmin(body, workspaceId)
   }
 
-  @Put('/admin/delete/:id')
+  @Delete('/admin/delete/:id')
   @Roles([RoleName.Admin])
   @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
   @ZodSerializerDto(MessageResDTO)
   deleteUserByAdmin(
     @Param('id') userId: string,
-    @Body() body: UserDeleteBodyDto,
   ) {
-    return this.userService.deleteUser(userId, body)
+    return this.userService.deleteUser(userId)
+  }
+
+  @Patch('/admin/active-user/:id')
+  @Roles([RoleName.Admin])
+  @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
+  @ZodSerializerDto(MessageResDTO)
+  activeUserByAdmin(
+    @Param('id') userId: string,
+    @Body() body: ActiveUserBodyDTO
+  ) {
+    return this.userService.activeUser(userId, body)
   }
 
   @Put('/admin/:id')

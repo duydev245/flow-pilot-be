@@ -8,7 +8,7 @@ import {
   WorkspaceRequiredError,
   WrongUserIdError,
 } from 'src/routes/user/user.errors'
-import { UserCreateByAdminType, UserCreateType, UserDeleteType, UserUpdateByAdminType, UserUpdateProfileType, UserUpdateType } from 'src/routes/user/user.model'
+import { ActiveUserType, UserCreateByAdminType, UserCreateType, UserUpdateByAdminType, UserUpdateProfileType, UserUpdateType } from 'src/routes/user/user.model'
 import { generateRandomPassword } from 'src/shared/helpers'
 import { UserRepository } from 'src/routes/user/user.repo'
 import { RoleName } from 'src/shared/constants/role.constant'
@@ -42,24 +42,39 @@ export class UserService {
     return false
   }
 
-  // delete user (soft delete)
-  async deleteUser(userId: string, body: UserDeleteType) {
+  async activeUser(userId: string, body: ActiveUserType) {
     try {
       const { status } = body;
 
       if (!isUuid(userId)) {
-        throw WrongUserIdError
+        throw WrongUserIdError;
       }
 
-      if (!status) {
+      if (status) {
         throw MissingStatusError;
+      }
+
+      await this.sharedUserRepository.update({ id: userId }, { status })
+
+      return SuccessResponse('Active user successful')
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error;
+    }
+  }
+
+  // delete user (soft delete)
+  async deleteUser(userId: string) {
+    try {
+      if (!isUuid(userId)) {
+        throw WrongUserIdError
       }
 
       if (await this.isSuperAdminAccount(userId)) {
         throw SuperAdminAccountException;
       }
 
-      await this.sharedUserRepository.update({ id: userId }, { status })
+      await this.sharedUserRepository.update({ id: userId }, { status: 'inactive' })
 
       return SuccessResponse('Delete user successful')
     } catch (error) {

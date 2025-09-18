@@ -37,8 +37,8 @@ export const UserUpdateProfileSchema = z.object({
   avatar_url: z.string().optional().nullable(),
 })
 
-export const UserDeleteSchema = z.object({
-  status: z.enum([UserStatus.active, UserStatus.inactive]),
+export const ActiveUserSchema = z.object({
+  status: z.enum([UserStatus.active]),
 }).strict()
 
 export type UserCreateType = z.infer<typeof UserCreateSchema>
@@ -46,4 +46,4 @@ export type UserCreateByAdminType = z.infer<typeof UserCreateByAdminSchema>
 export type UserUpdateType = z.infer<typeof UserUpdateSchema>
 export type UserUpdateByAdminType = z.infer<typeof UserUpdateByAdminSchema>
 export type UserUpdateProfileType = z.infer<typeof UserUpdateProfileSchema>
-export type UserDeleteType = z.infer<typeof UserDeleteSchema>
+export type ActiveUserType = z.infer<typeof ActiveUserSchema>
