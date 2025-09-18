@@ -50,7 +50,7 @@ export class WorkspaceService {
       const pkg = await this.packageRepository.getPackageById(body.package_id)
       if (!pkg) throw PACKAGE_ERRORS
       // body.start_date là string, cần chuyển sang Date để tính toán
-      const expire_date = addMonths(body.start_date, pkg.duration_in_months)
+      const expire_date = addMonths(new Date(body.start_date), pkg.duration_in_months)
       const result = await this.workspaceRepository.createWorkspace({
         ...body,
         expire_date: expire_date.toISOString(),
