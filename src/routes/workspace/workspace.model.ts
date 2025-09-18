@@ -51,7 +51,9 @@ export const ExtendWorkspaceSchema = z.object({
     .optional(),
 })
 
-export const WorkspaceDeleteSchema = WorkspaceSchema.pick({ status: true })
+export const WorkspaceDeleteSchema = z.object({
+  status: z.enum([PackageStatus.active, PackageStatus.inactive]),
+})
 
 export type ExtendWorkspaceType = z.infer<typeof ExtendWorkspaceSchema>
 export type WorkspaceCreateType = z.infer<typeof WorkspaceCreateSchema>
