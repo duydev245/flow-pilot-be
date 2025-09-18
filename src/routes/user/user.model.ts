@@ -38,7 +38,7 @@ export const UserUpdateProfileSchema = z.object({
 })
 
 export const UserDeleteSchema = z.object({
-  status: z.enum([UserStatus.inactive]),
+  status: z.enum([UserStatus.active, UserStatus.inactive]),
 }).strict()
 
 export type UserCreateType = z.infer<typeof UserCreateSchema>
