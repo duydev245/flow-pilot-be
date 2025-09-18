@@ -9,7 +9,7 @@ import { WorkspaceBodyDto, WorkspaceDeleteDto, WorkspaceUpdateDto, ExtendWorkspa
 import { ApiTags } from '@nestjs/swagger'
 
 @Controller('workspace')
-// @ApiTags('Workspace ')
+@ApiTags('Workspace Module')
 export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}
 

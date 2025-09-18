@@ -40,9 +40,13 @@ export class WorkspaceRepository {
     })
   }
 
-  async createWorkspace(data: WorkspaceCreateType & { expire_date: Date }) {
+  async createWorkspace(data: WorkspaceCreateType & { expire_date: string }) {
     return this.prismaService.workspace.create({
-      data,
+      data: {
+        ...data,
+        start_date: new Date(data.start_date),
+        expire_date: new Date(data.expire_date),
+      },
     })
   }
 
@@ -52,10 +56,15 @@ export class WorkspaceRepository {
       data: { ...body, updated_at: new Date() },
     })
   }
-  async extendWorkspace(workspaceId: string, body: ExtendWorkspaceType & { expire_date: Date }) {
+  async extendWorkspace(workspaceId: string, body: ExtendWorkspaceType & { expire_date: string }) {
     return await this.prismaService.workspace.update({
       where: { id: workspaceId },
-      data: { ...body, updated_at: new Date() },
+      data: {
+        ...body,
+        start_date: body.start_date ? new Date(body.start_date) : undefined,
+        expire_date: new Date(body.expire_date),
+        updated_at: new Date(),
+      },
     })
   }
 
