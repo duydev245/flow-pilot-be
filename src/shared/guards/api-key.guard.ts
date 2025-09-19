@@ -6,7 +6,7 @@ import { InvalidAPIKeyException } from '../error';
 export class APIKeyGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest()
-    const xAPIKey = request.headers['x-api-key']
+    const xAPIKey = request.headers['x-api-key'] || request.headers['X-API-KEY'];
     if (xAPIKey !== envConfig.SECRET_API_KEY) {
       throw InvalidAPIKeyException;
     }

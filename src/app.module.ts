@@ -3,8 +3,7 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { SharedModule } from './shared/shared.module'
 import { AuthModule } from './routes/auth/auth.module'
-import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core'
-import { APIKeyGuard } from './shared/guards/api-key.guard'
+import { APP_FILTER, APP_PIPE } from '@nestjs/core'
 import { CatchEverythingFilter } from './shared/filters/catch-everything.filter'
 import { WorkspaceModule } from './routes/workspace/workspace.module'
 import { ProjectModule } from './routes/project/project.module'
@@ -25,11 +24,7 @@ import { PackageModule } from './routes/package/package.module'
     {
       provide: APP_FILTER,
       useClass: CatchEverythingFilter,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: APIKeyGuard,
-    },
+    }
   ],
 })
-export class AppModule {}
+export class AppModule { }

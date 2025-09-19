@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUserBodyDTO, UserCreateBodyDto, UserCreateByAdminBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto, UserUpdateProfileBodyDto } from 'src/routes/user/user.dto'
 import { RoleName } from 'src/shared/constants/role.constant'
@@ -12,6 +12,8 @@ import { UserService } from './user.service'
 
 @Controller('user')
 @ApiTags('User Module')
+@ApiSecurity('apiKey')
+@ApiBearerAuth('access-token')
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
