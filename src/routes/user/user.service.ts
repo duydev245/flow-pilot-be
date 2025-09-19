@@ -50,13 +50,13 @@ export class UserService {
         throw WrongUserIdError;
       }
 
-      if (status) {
+      if (!status) {
         throw MissingStatusError;
       }
 
       await this.sharedUserRepository.update({ id: userId }, { status })
 
-      return SuccessResponse('Active user successful')
+      return SuccessResponse('User activated successfully')
     } catch (error) {
       this.logger.error(error.message)
       throw error;
