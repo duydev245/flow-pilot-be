@@ -26,9 +26,11 @@ export const FeatureUpdateSchema = FeatureSchema.pick({
   status: true,
   package_id: true,
 })
-export const FeatureDeleteSchema = FeatureSchema.pick({
-  status: true,
-})
+export const FeatureDeleteSchema = z
+  .object({
+    status: z.enum([FeatureStatus.active, FeatureStatus.inactive]),
+  })
+  .strict()
 export type FeatureDeleteType = z.infer<typeof FeatureDeleteSchema>
 export type FeatureUpdateType = z.infer<typeof FeatureUpdateSchema>
 export type FeatureType = z.infer<typeof FeatureSchema>

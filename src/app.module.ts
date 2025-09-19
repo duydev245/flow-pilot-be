@@ -5,15 +5,15 @@ import { SharedModule } from './shared/shared.module'
 import { AuthModule } from './routes/auth/auth.module'
 import { APP_FILTER, APP_PIPE } from '@nestjs/core'
 import { CatchEverythingFilter } from './shared/filters/catch-everything.filter'
-import { WorkspaceModule } from './routes/workspace/workspace.module'
 import { ProjectModule } from './routes/project/project.module'
 import { UserModule } from 'src/routes/user/user.module'
 import CustomZodValidationPipe from './shared/pipes/custom-zod-validation.pipe'
 import { FeatureModule } from './routes/feature/feature.module'
 import { PackageModule } from './routes/package/package.module'
+import { WorkspaceModule } from 'src/routes/workspace/workspace.module'
 
 @Module({
-  imports: [SharedModule, AuthModule, WorkspaceModule, ProjectModule, UserModule, FeatureModule, PackageModule],
+  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule],
   controllers: [AppController],
   providers: [
     AppService,

@@ -49,10 +49,11 @@ export class WorkspaceService {
     try {
       const pkg = await this.packageRepository.getPackageById(body.package_id)
       if (!pkg) throw PACKAGE_ERRORS
-      const expire_date = addMonths(body.start_date, pkg.duration_in_months)
+      // body.start_date là string, cần chuyển sang Date để tính toán
+      const expire_date = addMonths(new Date(body.start_date), pkg.duration_in_months)
       const result = await this.workspaceRepository.createWorkspace({
         ...body,
-        expire_date,
+        expire_date: expire_date.toISOString(),
       })
       return SuccessResponse('Create workspace successfully', result)
     } catch (error) {
@@ -81,12 +82,12 @@ export class WorkspaceService {
       if (!pkg) throw PACKAGE_ERRORS
 
       // Tính ngày hết hạn mới
-      const currentExpireDate = currentWorkspace.expire_date || new Date()
-      const newExpireDate = addMonths(new Date(currentExpireDate), pkg.duration_in_months)
+      const currentExpireDate = currentWorkspace.expire_date ? new Date(currentWorkspace.expire_date) : new Date()
+      const newExpireDate = addMonths(currentExpireDate, pkg.duration_in_months)
 
       const result = await this.workspaceRepository.extendWorkspace(id, {
         ...body,
-        expire_date: newExpireDate,
+        expire_date: newExpireDate.toISOString(),
       })
       return SuccessResponse('Extend workspace successfully', result)
     } catch (error) {

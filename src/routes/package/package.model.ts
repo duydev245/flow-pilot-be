@@ -20,7 +20,9 @@ export const PackageCreateSchema = PackageSchema.pick({
 })
 
 export const PackageUpdateSchema = PackageCreateSchema.partial()
-export const PackageDeleteSchema = PackageSchema.pick({ status: true })
+export const PackageDeleteSchema = z.object({
+  status: z.enum([PackageStatus.active, PackageStatus.inactive]),
+})
 
 export type PackageDeleteType = z.infer<typeof PackageDeleteSchema>
 
