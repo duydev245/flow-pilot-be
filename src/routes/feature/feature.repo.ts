@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common'
-import { FeatureCreateType, FeatureDeleteType, FeatureUpdateType } from 'src/routes/feature/feature.model'
-import { FeatureStatus } from 'src/shared/constants/common.constant'
-import { PrismaService } from 'src/shared/services/prisma.service'
+import { Injectable } from '@nestjs/common';
+import { FeatureCreateType, FeatureUpdateType } from 'src/routes/feature/feature.model';
+import { FeatureStatus } from 'src/shared/constants/common.constant';
+import { PrismaService } from 'src/shared/services/prisma.service';
 
 @Injectable()
 export class FeatureRepository {
@@ -42,11 +42,11 @@ export class FeatureRepository {
     })
   }
 
-  async deleteFeature(featureId: string, body: FeatureDeleteType) {
+  async deleteFeature(featureId: string) {
     return await this.prismaService.feature.update({
       where: { id: featureId },
       data: {
-        status: body.status,
+        status: FeatureStatus.inactive,
         updated_at: new Date(),
       },
     })

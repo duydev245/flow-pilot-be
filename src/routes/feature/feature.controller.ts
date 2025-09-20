@@ -1,12 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { FeatureService } from './feature.service'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
-import { Roles } from 'src/shared/decorators/roles.decorator'
-import { RoleName } from 'src/shared/constants/role.constant'
-import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
 import { ZodSerializerDto } from 'nestjs-zod'
+import { FeatureBodyDto, FeatureUpdateBodyDto } from 'src/routes/feature/feature.dto'
+import { RoleName } from 'src/shared/constants/role.constant'
+import { Roles } from 'src/shared/decorators/roles.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
-import { FeatureBodyDeleteDto, FeatureBodyDto, FeatureUpdateBodyDto } from 'src/routes/feature/feature.dto'
+import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
+import { FeatureService } from './feature.service'
 
 @Controller('feature')
 @ApiTags('Feature Module')
@@ -44,11 +44,11 @@ export class FeatureController {
     return this.featureService.updateFeature(id, body)
   }
 
-  @Put('delete/:id')
+  @Delete('delete/:id')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  deleteFeature(@Param('id') id: string, @Body() body: FeatureBodyDeleteDto) {
-    return this.featureService.deleteFeature(id, body)
+  deleteFeature(@Param('id') id: string) {
+    return this.featureService.deleteFeature(id)
   }
 }

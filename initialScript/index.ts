@@ -207,6 +207,7 @@ const main = async () => {
             manager_id: manager.id,
             start_date: new Date(),
             end_date: new Date(new Date().setMonth(new Date().getMonth() + 6)),
+            manager_id: manager.id,
             status: "active",
         },
     });
@@ -218,9 +219,8 @@ const main = async () => {
             id: generateUuid(),
             name: "Setup Landing Page",
             project_id: project.id,
-            start_date: new Date(),
-            due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
             start_at: new Date(),
+            // due_date removed, not in Task model
             status: "todo",
             priority: "medium",
         },
@@ -230,9 +230,8 @@ const main = async () => {
             id: generateUuid(),
             name: "Integrate Auth System",
             project_id: project.id,
-            start_date: new Date(),
-            due_date: new Date(new Date().setDate(new Date().getDate() + 14)),
             start_at: new Date(),
+            // due_date removed, not in Task model
             status: "doing",
             priority: "high",
         },

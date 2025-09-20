@@ -1,12 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { WorkspaceService } from './workspace.service'
-import { ZodSerializerDto } from 'nestjs-zod'
-import { MessageResDTO } from 'src/shared/dtos/response.dto'
-import { RoleName } from 'src/shared/constants/role.constant'
-import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
-import { Roles } from 'src/shared/decorators/roles.decorator'
-import { WorkspaceBodyDto, WorkspaceDeleteDto, WorkspaceUpdateDto, ExtendWorkspaceDto } from './workspace.dto'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+import { ZodSerializerDto } from 'nestjs-zod'
+import { RoleName } from 'src/shared/constants/role.constant'
+import { Roles } from 'src/shared/decorators/roles.decorator'
+import { MessageResDTO } from 'src/shared/dtos/response.dto'
+import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
+import { ExtendWorkspaceDto, WorkspaceBodyDto, WorkspaceUpdateDto } from './workspace.dto'
+import { WorkspaceService } from './workspace.service'
 
 @Controller('workspace')
 @ApiTags('Workspace Module')
@@ -52,11 +52,11 @@ export class WorkspaceController {
     return this.workspaceService.extendWorkspace(id, body)
   }
 
-  @Put('/delete/:id')
+  @Delete('/delete/:id')
   @UseGuards(AuthRoleGuard)
   @Roles([RoleName.SuperAdmin])
   @ZodSerializerDto(MessageResDTO)
-  deleteWorkspace(@Body() body: WorkspaceDeleteDto, @Param('id') id: string) {
-    return this.workspaceService.deleteWorkspace(id, body)
+  deleteWorkspace(@Param('id') id: string) {
+    return this.workspaceService.deleteWorkspace(id)
   }
 }

@@ -86,11 +86,11 @@ export class PackageRepository {
     })
   }
 
-  async deletePackage(packageId: string, body: PackageDeleteType) {
+  async deletePackage(packageId: string) {
     return await this.prismaService.package.update({
       where: { id: packageId },
       data: {
-        ...body,
+        status: PackageStatus.inactive,
         updated_at: new Date(),
       },
     })

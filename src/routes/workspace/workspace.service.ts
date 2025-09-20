@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { SuccessResponse } from 'src/shared/sucess'
-import { ExtendWorkspaceType, WorkspaceCreateType, WorkspaceDeleteType, WorkspaceUpdateType } from './workspace.model'
-import { WorkspaceRepository } from './workspace.repo'
 import { addMonths } from 'date-fns'
-import { PACKAGE_ERRORS, WORKSPACE_ERRORS } from 'src/routes/workspace/workspace.errors'
 import { PackageRepository } from 'src/routes/package/package.repo'
+import { PACKAGE_ERRORS, WORKSPACE_ERRORS } from 'src/routes/workspace/workspace.errors'
+import { SuccessResponse } from 'src/shared/sucess'
+import { ExtendWorkspaceType, WorkspaceCreateType, WorkspaceUpdateType } from './workspace.model'
+import { WorkspaceRepository } from './workspace.repo'
 
 @Injectable()
 export class WorkspaceService {
@@ -96,9 +96,9 @@ export class WorkspaceService {
     }
   }
 
-  async deleteWorkspace(id: string, body: WorkspaceDeleteType) {
+  async deleteWorkspace(id: string) {
     try {
-      const result = await this.workspaceRepository.deleteWorkspace(id, body)
+      const result = await this.workspaceRepository.deleteWorkspace(id)
       return SuccessResponse('Delete workspace successfully', result)
     } catch (error) {
       this.logger.error(error.message)

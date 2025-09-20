@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { SuccessResponse } from 'src/shared/sucess'
-import { PackageCreateType, PackageDeleteType, PackageUpdateType } from 'src/routes/package/package.model'
+import { PackageCreateType, PackageUpdateType } from 'src/routes/package/package.model'
 import { PackageRepository } from 'src/routes/package/package.repo'
+import { SuccessResponse } from 'src/shared/sucess'
 
 @Injectable()
 export class PackageService {
@@ -65,9 +65,9 @@ export class PackageService {
       throw error
     }
   }
-  async deletePackage(id: string, body: PackageDeleteType) {
+  async deletePackage(id: string) {
     try {
-      const result = await this.packageRepository.deletePackage(id, body)
+      const result = await this.packageRepository.deletePackage(id)
       return SuccessResponse('Delete package successfully', result)
     } catch (error) {
       this.logger.error(error.message)
