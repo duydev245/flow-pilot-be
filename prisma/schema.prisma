@@ -152,7 +152,7 @@ model User {
   department          Department?            @relation(fields: [department_id], references: [id])
   role                SystemRole             @relation(fields: [role_id], references: [id])
   workspace           Workspace?             @relation(fields: [workspace_id], references: [id])
-  managedProject      Project?               @relation("ProjectManager")
+  managedProject      Project[]              @relation("ProjectManager")
 
   @@index([role_id])
   @@index([workspace_id])
@@ -269,7 +269,7 @@ model Project {
   team_size     Int?
   created_at    DateTime          @default(now())
   updated_at    DateTime?         @updatedAt
-  manager_id    String            @unique @db.Uuid
+  manager_id    String            @db.Uuid
   manager       User              @relation("ProjectManager", fields: [manager_id], references: [id])
   status        ProjectStatus
   notifications Notification[]    @relation("NotificationProject")
@@ -280,7 +280,9 @@ model Project {
 
   @@index([workspace_id])
   @@index([workspace_id, status])
+  @@index([manager_id])
 }
+
 model ProjectUser {
   id         Int     @id @default(autoincrement())
   project_id String  @db.Uuid
