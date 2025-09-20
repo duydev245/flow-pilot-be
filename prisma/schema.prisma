@@ -146,11 +146,13 @@ model User {
   taskContents        TaskContent[]
   rejectionHistories  TaskRejectionHistory[]
   taskReviews         TaskReview[]           @relation("ReviewerTaskReviews")
+  ownedTaskReviews    TaskReview[]           @relation("TaskOwnerReviews")
   taskUsers           TaskUser[]
   uploads             UploadFile[]
   department          Department?            @relation(fields: [department_id], references: [id])
   role                SystemRole             @relation(fields: [role_id], references: [id])
   workspace           Workspace?             @relation(fields: [workspace_id], references: [id])
+  managedProject      Project?               @relation("ProjectManager")
 
   @@index([role_id])
   @@index([workspace_id])
@@ -267,6 +269,8 @@ model Project {
   team_size     Int?
   created_at    DateTime          @default(now())
   updated_at    DateTime?         @updatedAt
+  manager_id    String            @unique @db.Uuid
+  manager       User              @relation("ProjectManager", fields: [manager_id], references: [id])
   status        ProjectStatus
   notifications Notification[]    @relation("NotificationProject")
   performance   PerformanceData[]
@@ -277,7 +281,6 @@ model Project {
   @@index([workspace_id])
   @@index([workspace_id, status])
 }
-
 model ProjectUser {
   id         Int     @id @default(autoincrement())
   project_id String  @db.Uuid
@@ -298,8 +301,6 @@ model Task {
   time_spent_in_minutes Int?
   start_at              DateTime
   completed_at          DateTime?
-  start_date            DateTime
-  due_date              DateTime
   created_at            DateTime               @default(now())
   updated_at            DateTime?              @updatedAt
   status                TaskStatus
@@ -308,12 +309,12 @@ model Task {
   project               Project                @relation(fields: [project_id], references: [id])
   contents              TaskContent[]
   rejections            TaskRejectionHistory[]
-  review                TaskReview?
+  reviews               TaskReview[]
   assignees             TaskUser[]
   files                 UploadFile[]
 
   @@index([project_id])
-  @@index([project_id, status, due_date])
+  @@index([project_id, status])
 }
 
 model TaskUser {
@@ -329,19 +330,26 @@ model TaskUser {
 }
 
 model TaskReview {
-  id             Int       @id @default(autoincrement())
-  task_id        String    @unique @db.Uuid
-  reviewer_id    String    @db.Uuid
-  quality_score  Float
-  feedback_score Float
-  notes          String?
-  reviewed_at    DateTime  @default(now())
-  created_at     DateTime  @default(now())
-  updated_at     DateTime? @updatedAt
-  reviewer       User      @relation("ReviewerTaskReviews", fields: [reviewer_id], references: [id])
-  task           Task      @relation(fields: [task_id], references: [id])
+  id Int @id @default(autoincrement())
 
+  task_id       String @unique @db.Uuid
+  reviewer_id   String @db.Uuid
+  task_owner_id String @db.Uuid
+
+  quality_score Float
+  notes         String?
+  reviewed_at   DateTime  @default(now())
+  created_at    DateTime  @default(now())
+  updated_at    DateTime? @updatedAt
+
+  task Task @relation(fields: [task_id], references: [id])
+
+  reviewer   User @relation("ReviewerTaskReviews", fields: [reviewer_id], references: [id])
+  task_owner User @relation("TaskOwnerReviews", fields: [task_owner_id], references: [id])
+
+  @@unique([task_id, reviewer_id])
   @@index([reviewer_id])
+  @@index([task_owner_id])
 }
 
 model UploadFile {
@@ -441,6 +449,7 @@ enum TaskStatus {
   reviewing
   rejected
   completed
+  feedbacked
   overdued
 }
 
