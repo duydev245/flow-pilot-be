@@ -42,22 +42,21 @@ model Feature {
 }
 
 model Workspace {
-  id            String         @id @default(uuid()) @db.Uuid
-  name          String         @unique
-  company_code  String?        @unique
-  company_name  String
-  package_id    String         @db.Uuid
-  start_date    DateTime
-  expire_date   DateTime
-  created_at    DateTime       @default(now())
-  updated_at    DateTime?      @updatedAt
-  status        BinaryStatus
-  departments   Department[]
-  notifications Notification[] @relation("NotificationWorkspace")
-  orders        Order[]
-  projects      Project[]
-  users         User[]
-  package       Package        @relation(fields: [package_id], references: [id])
+  id           String       @id @default(uuid()) @db.Uuid
+  name         String       @unique
+  company_code String?      @unique
+  company_name String
+  package_id   String       @db.Uuid
+  start_date   DateTime
+  expire_date  DateTime
+  created_at   DateTime     @default(now())
+  updated_at   DateTime?    @updatedAt
+  status       BinaryStatus
+  departments  Department[]
+  orders       Order[]
+  projects     Project[]
+  users        User[]
+  package      Package      @relation(fields: [package_id], references: [id])
 
   @@index([package_id])
   @@index([status])
@@ -174,26 +173,18 @@ model RefreshToken {
 }
 
 model Notification {
-  id                   Int              @id @default(autoincrement())
-  user_id              String           @db.Uuid
-  title                String?
-  content              String?
-  is_read              Boolean          @default(false)
-  related_task_id      String?          @db.Uuid
-  related_project_id   String?          @db.Uuid
-  related_workspace_id String?          @db.Uuid
-  created_at           DateTime         @default(now())
-  updated_at           DateTime?        @updatedAt
-  type                 NotificationType
-  relatedProject       Project?         @relation("NotificationProject", fields: [related_project_id], references: [id])
-  relatedTask          Task?            @relation("NotificationTask", fields: [related_task_id], references: [id])
-  relatedWorkspace     Workspace?       @relation("NotificationWorkspace", fields: [related_workspace_id], references: [id])
-  user                 User             @relation(fields: [user_id], references: [id])
+  id         Int              @id @default(autoincrement())
+  user_id    String           @db.Uuid
+  title      String?
+  content    String?
+  is_read    Boolean          @default(false)
+  created_at DateTime         @default(now())
+  updated_at DateTime?        @updatedAt
+  type       NotificationType
+  data       Json?
+  user       User             @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
-  @@index([related_task_id])
-  @@index([related_project_id])
-  @@index([related_workspace_id])
 }
 
 model MicroFeedback {
@@ -258,24 +249,23 @@ model DailyFocusLog {
 }
 
 model Project {
-  id            String            @id @default(uuid()) @db.Uuid
-  workspace_id  String            @db.Uuid
-  name          String
-  description   String?
-  start_date    DateTime
-  end_date      DateTime
-  process       Int?
-  team_size     Int?
-  created_at    DateTime          @default(now())
-  updated_at    DateTime?         @updatedAt
-  manager_id    String            @db.Uuid
-  manager       User              @relation("ProjectManager", fields: [manager_id], references: [id])
-  status        ProjectStatus
-  notifications Notification[]    @relation("NotificationProject")
-  performance   PerformanceData[]
-  workspace     Workspace         @relation(fields: [workspace_id], references: [id])
-  members       ProjectUser[]
-  tasks         Task[]
+  id           String            @id @default(uuid()) @db.Uuid
+  workspace_id String            @db.Uuid
+  name         String
+  description  String?
+  start_date   DateTime
+  end_date     DateTime
+  process      Int?
+  team_size    Int?
+  created_at   DateTime          @default(now())
+  updated_at   DateTime?         @updatedAt
+  manager_id   String            @db.Uuid
+  manager      User              @relation("ProjectManager", fields: [manager_id], references: [id])
+  status       ProjectStatus
+  performance  PerformanceData[]
+  workspace    Workspace         @relation(fields: [workspace_id], references: [id])
+  members      ProjectUser[]
+  tasks        Task[]
 
   @@index([workspace_id])
   @@index([workspace_id, status])
@@ -308,7 +298,6 @@ model Task {
   updated_at            DateTime?              @updatedAt
   status                TaskStatus
   priority              TaskPriority
-  notifications         Notification[]         @relation("NotificationTask")
   project               Project                @relation(fields: [project_id], references: [id])
   contents              TaskContent[]
   rejections            TaskRejectionHistory[]
