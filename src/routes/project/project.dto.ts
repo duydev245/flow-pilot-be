@@ -1,6 +1,9 @@
 import { createZodDto } from 'nestjs-zod'
-import { CreateProjectSchema, ProjectIdSchema, UpdateProjectSchema } from 'src/shared/models/shared-project-model'
+import { CreateProjectSchema, CreateProjectSchemaByAdmin, ProjectIdSchema, UpdateProjectByAdminSchema, UpdateProjectByUserSchema } from 'src/routes/project/project.model'
+import { } from 'src/shared/models/shared-project-model'
 
-export class ProjectBodyDto extends createZodDto(CreateProjectSchema) {}
-export class ProjectUpdateDto extends createZodDto(UpdateProjectSchema) {}
+export class ProjectAdminBodyDto extends createZodDto(CreateProjectSchemaByAdmin) {}
+export class ProjecAdmintUpdateDto extends createZodDto(UpdateProjectByAdminSchema) {}
+export class ProjectUpdateDto extends createZodDto(UpdateProjectByUserSchema) {}
 export class ProjectIdDto extends createZodDto(ProjectIdSchema) {}
+export class ProjectBodyDto extends createZodDto(CreateProjectSchema) {}

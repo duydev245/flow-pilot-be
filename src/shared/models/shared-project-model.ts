@@ -16,28 +16,3 @@ export const ProjectSchema = z.object({
   updated_at: z.date().nullable(),
 })
 
-export const CreateProjectSchema = ProjectSchema.pick({
-  workspace_id: true,
-  name: true,
-  description: true,
-  start_date: true,
-  end_date: true,
-  team_size: true,
-  manager_id: true,
-  status: true,
-})
-export const UpdateProjectSchema = ProjectSchema.pick({
-  name: true,
-  description: true,
-  start_date: true,
-  end_date: true,
-  process: true,
-  team_size: true,
-  manager_id: true,
-  status: true,
-}).partial()
-export const ProjectIdSchema = ProjectSchema.pick({
-  workspace_id: true,
-})
-export type CreateProjectType = z.infer<typeof CreateProjectSchema>
-export type UpdateProjectType = z.infer<typeof UpdateProjectSchema>

@@ -25,6 +25,7 @@ export const GetWorkSpaceId = createParamDecorator((data: unknown, ctx: Executio
   return req.user.workspace_id
 })
 
+
 export const GetUserId = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
   const req = ctx.switchToHttp().getRequest()
   return req.user.id
