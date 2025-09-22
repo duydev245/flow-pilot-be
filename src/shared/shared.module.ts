@@ -11,8 +11,20 @@ import { EmailService } from './services/email.service'
 import { SharedUserRepository } from './repositories/shared-user.repo'
 import { SharedWorkspaceRepository } from './repositories/shared-workspace.repo'
 import { SharedRoleRepository } from './repositories/shared-role.repo'
+import { SharedNotificationService } from './services/shared-notification.service'
+import { SharedNotificationRepository } from './repositories/shared-notification.repo'
 
-const sharedServices = [PrismaService, HashingService, TokenService, EmailService, SharedUserRepository, SharedWorkspaceRepository, SharedRoleRepository]
+const sharedServices = [
+  PrismaService,
+  HashingService,
+  TokenService,
+  EmailService,
+  SharedUserRepository,
+  SharedWorkspaceRepository,
+  SharedRoleRepository,
+  SharedNotificationService,
+  SharedNotificationRepository
+]
 
 @Global()
 @Module({

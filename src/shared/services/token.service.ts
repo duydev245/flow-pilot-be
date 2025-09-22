@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import envConfig from 'src/shared/config'
-
 import { v4 as uuidv4 } from 'uuid'
 import { IAccessTokenPayload, IAccessTokenPayloadCreate, IRefreshTokenPayload, IRefreshTokenPayloadCreate } from '../types/jwt.type'
 

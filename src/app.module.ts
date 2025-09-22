@@ -12,11 +12,11 @@ import { FeatureModule } from './routes/feature/feature.module'
 import { PackageModule } from './routes/package/package.module'
 import { WorkspaceModule } from 'src/routes/workspace/workspace.module'
 import { FocusLogModule } from './routes/focus-log/focus-log.module';
-import { NotificationModule } from './routes/notification/notification.module';
 import { MicroFeedbackModule } from './routes/micro-feedback/micro-feedback.module';
+import { NotificationModule } from './routes/notification/notification.module';
 
 @Module({
-  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, NotificationModule, MicroFeedbackModule],
+  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, MicroFeedbackModule, NotificationModule],
   controllers: [AppController],
   providers: [
     AppService,
