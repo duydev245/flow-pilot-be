@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PackageNotFound } from 'src/routes/feature/feature.errors'
-import { FeatureCreateType, FeatureDeleteType, FeatureUpdateType } from 'src/routes/feature/feature.model'
+import { FeatureCreateType, FeatureUpdateType } from 'src/routes/feature/feature.model'
 import { FeatureRepository } from 'src/routes/feature/feature.repo'
 import { SuccessResponse } from 'src/shared/sucess'
 import { PackageRepository } from './../package/package.repo'
@@ -59,9 +59,9 @@ export class FeatureService {
     }
   }
 
-  async deleteFeature(featureId: string, body: FeatureDeleteType) {
+  async deleteFeature(featureId: string) {
     try {
-      const result = await this.featureRepository.deleteFeature(featureId, body)
+      const result = await this.featureRepository.deleteFeature(featureId)
       return SuccessResponse('Delete feature successfully', result)
     } catch (error) {
       this.logger.error(error)

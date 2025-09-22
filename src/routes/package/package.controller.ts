@@ -1,12 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { PackageService } from './package.service'
-import { ZodSerializerDto } from 'nestjs-zod'
-import { MessageResDTO } from 'src/shared/dtos/response.dto'
-import { RoleName } from 'src/shared/constants/role.constant'
-import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
-import { Roles } from 'src/shared/decorators/roles.decorator'
-import { PackageBodyDto, PackageDeleteDto, PackageUpdateDto } from 'src/routes/package/package.dto'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ApiTags } from '@nestjs/swagger'
+import { ZodSerializerDto } from 'nestjs-zod'
+import { PackageBodyDto, PackageUpdateDto } from 'src/routes/package/package.dto'
+import { RoleName } from 'src/shared/constants/role.constant'
+import { Roles } from 'src/shared/decorators/roles.decorator'
+import { MessageResDTO } from 'src/shared/dtos/response.dto'
+import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
+import { PackageService } from './package.service'
 
 @Controller('package')
 @ApiTags('Package Module')
@@ -48,11 +48,11 @@ export class PackageController {
     return this.packageService.updatePackage(id, body)
   }
 
-  @Put('/delete/:id')
+  @Delete('/delete/:id')
   @UseGuards(AuthRoleGuard)
   @Roles([RoleName.SuperAdmin])
   @ZodSerializerDto(MessageResDTO)
-  deletePackage(@Body() body: PackageDeleteDto, @Param('id') id: string) {
-    return this.packageService.deletePackage(id, body)
+  deletePackage(@Param('id') id: string) {
+    return this.packageService.deletePackage(id)
   }
 }

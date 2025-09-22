@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { WorkspaceStatus } from 'src/shared/constants/common.constant'
 import { PrismaService } from 'src/shared/services/prisma.service'
-import { WorkspaceCreateType, WorkspaceDeleteType, WorkspaceUpdateType, ExtendWorkspaceType } from './workspace.model'
+import { ExtendWorkspaceType, WorkspaceCreateType, WorkspaceUpdateType } from './workspace.model'
 
 @Injectable()
 export class WorkspaceRepository {
@@ -68,10 +68,13 @@ export class WorkspaceRepository {
     })
   }
 
-  async deleteWorkspace(workspaceId: string, body: WorkspaceDeleteType) {
+  async deleteWorkspace(workspaceId: string) {
     return await this.prismaService.workspace.update({
       where: { id: workspaceId },
-      data: { ...body, updated_at: new Date() },
+      data: {
+        status: WorkspaceStatus.inactive,
+        updated_at: new Date(),
+      },
     })
   }
 }
