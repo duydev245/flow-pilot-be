@@ -42,7 +42,6 @@ export class ProjectRepository {
 
   async createProjectBySuperAdmin(body: CreateProjectByAdminType) {
     const data = { ...body }
-    console.log('data: ', data)
     if (data.start_date) data.start_date = new Date(data.start_date).toISOString()
     if (data.end_date) data.end_date = new Date(data.end_date).toISOString()
     return this.prismaService.project.create({ data })

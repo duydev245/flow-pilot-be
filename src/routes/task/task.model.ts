@@ -7,7 +7,7 @@ export const CreateTaskSchema = taskSchema.pick({
   name: true,
   description: true,
   start_at: true,
-  due_date: true,
+  due_at: true,
   time_spent_in_minutes: true,
   priority: true,
   status: true,
@@ -18,7 +18,7 @@ export const UpdateTaskSchema = taskSchema
     name: true,
     description: true,
     start_at: true,
-    due_date: true,
+    due_at: true,
     priority: true,
     status: true,
   })
@@ -35,6 +35,10 @@ export const CreateTaskReviewSchema = TaskReviewSchema.pick({
   notes: true,
 })
 export const UpdateTaskReviewSchema = TaskReviewSchema.pick({
+  quality_score: true,
+  notes: true,
+})
+export const UpdateTaskReviewBodySchema = TaskReviewSchema.pick({
   quality_score: true,
   notes: true,
 })

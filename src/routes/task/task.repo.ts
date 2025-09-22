@@ -10,6 +10,7 @@ import {
   UpdateTaskChecklistType,
   CreateTaskReviewType,
   CreateRejectHistoryType,
+  UpdateTaskReviewType,
 } from './task.model'
 
 @Injectable()
@@ -29,7 +30,7 @@ export class TaskRepository {
     await this.prismaService.task.updateMany({
       where: {
         completed_at: null,
-        due_date: { lt: now },
+        due_at: { lt: now },
         status: { not: TaskStatus.overdued },
       },
       data: { status: TaskStatus.overdued },
@@ -55,8 +56,9 @@ export class TaskRepository {
       },
     })
   }
+
   async createTask(data: CreateTaskType) {
-    const taskData: any = {
+    const dataToCreate: any = {
       project_id: data.project_id,
       name: data.name,
       description: data.description,
@@ -64,10 +66,10 @@ export class TaskRepository {
       priority: data.priority,
       status: data.status,
     }
-    if (data.start_at) taskData.start_at = new Date(data.start_at)
-    if (data.due_date) taskData.due_date = new Date(data.due_date)
+    if (data.start_at) dataToCreate.start_at = new Date(data.start_at)
+    if (data.due_at) dataToCreate.due_at = new Date(data.due_at)
     const created = await this.prismaService.task.create({
-      data: taskData,
+      data: dataToCreate,
       include: {
         contents: true,
         checklists: true,
@@ -192,5 +194,18 @@ export class TaskRepository {
 
   async createTaskRejectionHistory(data: CreateRejectHistoryType) {
     return this.prismaService.taskRejectionHistory.create({ data })
+  }
+
+  async updateTaskReview(id: number, data: UpdateTaskReviewType) {
+    return this.prismaService.taskReview.update({
+      where: { id },
+      data,
+    })
+  }
+
+  async getAllTaskReviews() {
+    return this.prismaService.taskReview.findMany({
+      include: { task: true },
+    })
   }
 }

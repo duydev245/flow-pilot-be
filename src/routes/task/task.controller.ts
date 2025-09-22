@@ -14,6 +14,7 @@ import {
   TaskContentBodyDto,
   TaskContentUpdateDto,
   TaskUpdateDto,
+  UpdateTaskReviewDto,
 } from './task.dto'
 import { TaskService } from './task.service'
 
@@ -28,6 +29,13 @@ export class TaskController {
   @ZodSerializerDto(MessageResDTO)
   getTasks() {
     return this.taskService.getAllTasks()
+  }
+  @Get('get-all-task-reviews')
+  @Roles([RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getAllTaskReviews() {
+    return this.taskService.getAllTaskReviews()
   }
 
   @Get(':id')
@@ -60,6 +68,22 @@ export class TaskController {
   @ZodSerializerDto(MessageResDTO)
   createTaskChecklist(@Body() body: TaskChecklistBodyDto) {
     return this.taskService.createTaskChecklist(body)
+  }
+
+  @Post('create-review')
+  @Roles([RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  createTaskReview(@Body() body: CreateTaskReviewDto) {
+    return this.taskService.createTaskReviewAndCaculatePerformance(body)
+  }
+
+  @Post('reject-task')
+  @Roles([RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  rejectTask(@Body() body: CreateTaskRejectBodyDto) {
+    return this.taskService.rejectTaskAndCaculatePerformance(body)
   }
 
   @Put('update/:id')
@@ -110,19 +134,11 @@ export class TaskController {
     return this.taskService.deleteTaskContent(id)
   }
 
-  @Post('create-review')
+  @Put('update-review/:id')
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  createTaskReview(@Body() body: CreateTaskReviewDto) {
-    return this.taskService.createTaskReviewAndCaculatePerformance(body)
-  }
-
-  @Post('reject-task')
-  @Roles([RoleName.ProjectManager, RoleName.Admin])
-  @UseGuards(AuthRoleGuard)
-  @ZodSerializerDto(MessageResDTO)
-  rejectTask(@Body() body: CreateTaskRejectBodyDto) {
-    return this.taskService.rejectTaskAndCaculatePerformance(body)
+  updateTaskReview(@Param('id') id: string, @Body() body: UpdateTaskReviewDto) {
+    return this.taskService.updateTaskReviewAndCaculatePerformance(id, body)
   }
 }

@@ -1,4 +1,4 @@
-import { CreateRejectHistoryType } from './task.model'
+import { CreateRejectHistoryType, UpdateTaskReviewType } from './task.model'
 import { Injectable, Logger } from '@nestjs/common'
 import { TaskRepository } from 'src/routes/task/task.repo'
 import { SuccessResponse } from 'src/shared/sucess'
@@ -12,7 +12,7 @@ import {
   CreateTaskReviewType,
 } from './task.model'
 import { GetTaskFail } from 'src/routes/task/task.errors'
-import { TaskPriority } from '@prisma/client'
+import { TaskPriority, TaskStatus } from '@prisma/client'
 
 @Injectable()
 export class TaskService {
@@ -72,12 +72,13 @@ export class TaskService {
 
   async createTask(body: CreateTaskType) {
     try {
-      let due_date = (body as any).due_date
-      if ((body as any).start_at && (body as any).time_spent_in_minutes) {
-        const start = new Date((body as any).start_at)
-        due_date = new Date(start.getTime() + (body as any).time_spent_in_minutes * 60000)
+      let due_at = body.due_at
+      // tính due_at = start_at + time_spent_in_minutes
+      if (body.start_at && body.time_spent_in_minutes) {
+        const start = new Date(body.start_at)
+        due_at = new Date(start.getTime() + body.time_spent_in_minutes * 60000).toISOString()
       }
-      const result = await this.taskRepository.createTask({ ...body, due_date })
+      const result = await this.taskRepository.createTask({ ...body, due_at })
       return SuccessResponse('Task created successfully', result)
     } catch (error) {
       this.logger.error(error.message)
@@ -209,6 +210,9 @@ export class TaskService {
       const task = await this.taskRepository.getTaskById(body.task_id)
       if (!task) throw GetTaskFail
 
+      // Cập nhật trạng thái task = rejected
+      await this.taskRepository.updateTask(body.task_id, { status: TaskStatus.rejected })
+
       // 3. Lấy toàn bộ review của user này cho project (PerformanceData)
       const userProjectReviews = await this.taskRepository.getUserProjectReviews({
         user_id: body.rejected_by,
@@ -258,6 +262,89 @@ export class TaskService {
       })
 
       return SuccessResponse('Task rejected and performance updated', rejection)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async updateTaskReviewAndCaculatePerformance(id: string, body: UpdateTaskReviewType) {
+    try {
+      // 1. Lấy review hiện tại để lấy task_id và task_owner_id
+      const currentReview = await this.taskRepository.getAllTaskReviews()
+      const reviewToUpdate = Array.isArray(currentReview) ? currentReview.find((r: any) => r.id === +id) : null
+      if (!reviewToUpdate) throw new Error('Review not found')
+      const { task_id, task_owner_id } = reviewToUpdate
+
+      // 2. Update TaskReview
+      const review = await this.taskRepository.updateTaskReview(+id, {
+        quality_score: body.quality_score,
+        notes: body.notes,
+      })
+
+      // 3. Lấy thông tin task liên quan
+      const task = await this.taskRepository.getTaskById(task_id)
+      if (!task) throw GetTaskFail
+
+      // 4. Lấy toàn bộ review của user này cho project (PerformanceData)
+      const userProjectReviews = await this.taskRepository.getUserProjectReviews({
+        user_id: task_owner_id,
+        project_id: task.project_id,
+      })
+
+      // Tính quality_score trung bình có trọng số (ưu tiên)
+      let totalScore = 0,
+        totalWeight = 0
+      for (const r of userProjectReviews) {
+        let weight = 1
+        if (r.task.priority === 'high') weight = 2
+        else if (r.task.priority === 'medium') weight = 1.5
+        totalScore += r.quality_score * weight
+        totalWeight += weight
+      }
+      const avgQualityScore = totalWeight ? totalScore / totalWeight : null
+
+      // 5. Upsert PerformanceData
+      await this.taskRepository.upsertPerformanceData({
+        user_id: task_owner_id,
+        project_id: task.project_id,
+        working_hours: task.time_spent_in_minutes || 0,
+        task_completed: 1,
+        quality_score: avgQualityScore,
+      })
+
+      // 6. Lấy toàn bộ review của user này (OverallPerformance)
+      const userAllReviews = await this.taskRepository.getUserAllReviews(task_owner_id)
+      let totalScoreAll = 0,
+        totalWeightAll = 0
+      for (const r of userAllReviews) {
+        let weight = 1
+        if (r.task.priority === 'high') weight = 2
+        else if (r.task.priority === 'medium') weight = 1.5
+        totalScoreAll += r.quality_score * weight
+        totalWeightAll += weight
+      }
+      const avgQualityScoreAll = totalWeightAll ? totalScoreAll / totalWeightAll : null
+
+      // 7. Upsert OverallPerformance
+      await this.taskRepository.upsertOverallPerformance({
+        user_id: task_owner_id,
+        working_hours: task.time_spent_in_minutes || 0,
+        task_completed: 1,
+        quality_score: avgQualityScoreAll,
+      })
+
+      return SuccessResponse('Task review updated and performance updated', review)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async getAllTaskReviews() {
+    try {
+      const result = await this.taskRepository.getAllTaskReviews()
+      return SuccessResponse('Task reviews retrieved successfully', result)
     } catch (error) {
       this.logger.error(error.message)
       throw error

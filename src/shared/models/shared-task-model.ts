@@ -9,7 +9,7 @@ export const taskSchema = z.object({
   description: z.string().max(255).optional(),
   time_spent_in_minutes: z.number().int().nonnegative().default(0),
   start_at: z.string().optional(),
-  due_date: z.string().optional(),
+  due_at: z.string().optional(),
   end_at: z.string().optional(),
   created_at: z.date().default(() => new Date()),
   updated_at: z.date().nullable(),

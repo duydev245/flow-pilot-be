@@ -198,25 +198,24 @@ const main = async () => {
     },
   })
 
-    // 7. Project
-    const project = await prisma.project.create({
-        data: {
-            id: generateUuid(),
-            name: "Website Revamp",
-            workspace_id: workspace.id,
-            manager_id: manager.id,
-            start_date: new Date(),
-            end_date: new Date(new Date().setMonth(new Date().getMonth() + 6)),
-            status: "active",
-        },
-    });
-
+  // 7. Project
+  const project = await prisma.project.create({
+    data: {
+      id: generateUuid(),
+      name: 'Website Revamp',
+      workspace_id: workspace.id,
+      manager_id: manager.id,
+      start_date: new Date(),
+      end_date: new Date(new Date().setMonth(new Date().getMonth() + 6)),
+      status: 'active',
+    },
+  })
 
   // 8. Tasks
-  const now = new Date();
-  const due1 = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 ngày sau
-  const due2 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 ngày sau
-  const duePast = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2 ngày trước
+  const now = new Date()
+  const due1 = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) // 3 ngày sau
+  const due2 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 ngày sau
+  const duePast = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000) // 2 ngày trước
 
   const task1 = await prisma.task.create({
     data: {
@@ -224,7 +223,7 @@ const main = async () => {
       name: 'Setup Landing Page',
       project_id: project.id,
       start_at: now,
-      due_date: due1,
+      due_at: due1,
       status: 'todo',
       priority: 'medium',
     },
@@ -235,7 +234,7 @@ const main = async () => {
       name: 'Integrate Auth System',
       project_id: project.id,
       start_at: now,
-      due_date: due2,
+      due_at: due2,
       status: 'doing',
       priority: 'high',
     },
@@ -247,7 +246,7 @@ const main = async () => {
       name: 'Overdue Task',
       project_id: project.id,
       start_at: now,
-      due_date: duePast,
+      due_at: duePast,
       status: 'todo',
       priority: 'low',
     },
@@ -344,6 +343,8 @@ main()
   .then((result) => {
     console.log('✅ Seed done')
     console.info(result)
-    console.table(result, ['email', 'name'])
+    if (result && result.superAdminUser && result.admin && result.manager && result.employee) {
+      console.table([result.superAdminUser, result.admin, result.manager, result.employee], ['email', 'name'])
+    }
   })
   .catch(console.error)
