@@ -107,7 +107,7 @@ export class TaskRepository {
     return this.prismaService.task.update({
       where: { id },
       data: {
-        status: 'inactive' as any,
+        status: TaskStatus.rejected,
       },
     })
   }
