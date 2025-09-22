@@ -7,7 +7,7 @@ export class FocusLogRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(data: DailyFocusLogCreateType) {
-    return this.prisma.dailyFocusLog.create({ data });
+    return this.prisma.dailyFocusLog.create({ data  });
   }
 
   async findAll() {

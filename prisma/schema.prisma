@@ -217,6 +217,7 @@ model PerformanceData {
 
   @@index([user_id])
   @@index([project_id])
+  @@unique([user_id, project_id])
 }
 
 model OverallPerformance {
@@ -234,6 +235,7 @@ model OverallPerformance {
   user             User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
+  @@unique([user_id])
 }
 
 model DailyFocusLog {
@@ -290,9 +292,8 @@ model Task {
   name                  String
   description           String?
   time_spent_in_minutes Int?
-  start_date            DateTime
-  due_date              DateTime
   start_at              DateTime
+  due_at                DateTime?
   completed_at          DateTime?
   created_at            DateTime               @default(now())
   updated_at            DateTime?              @updatedAt
@@ -304,6 +305,7 @@ model Task {
   reviews               TaskReview[]
   assignees             TaskUser[]
   files                 UploadFile[]
+  checklists            TaskChecklist[]  
 
   @@index([project_id])
   @@index([project_id, status])
@@ -382,7 +384,7 @@ model TaskRejectionHistory {
   id          Int       @id @default(autoincrement())
   task_id     String    @db.Uuid
   rejected_by String    @db.Uuid
-  rejected_at DateTime
+  rejected_at DateTime @default(now())
   reason      String
   notes       String?
   created_at  DateTime  @default(now())
@@ -393,7 +395,21 @@ model TaskRejectionHistory {
   @@index([task_id])
   @@index([rejected_by])
 }
+model TaskChecklist {
+  id           Int          @id @default(autoincrement())
+  task_id      String       @db.Uuid
+  title        String
+  status       BinaryStatus 
+  is_completed Boolean?      
+  completed_at DateTime?
+  created_at   DateTime     @default(now())
+  updated_at   DateTime?    @updatedAt
 
+  task         Task         @relation(fields: [task_id], references: [id])
+
+  @@index([task_id])
+  @@index([status])
+}
 enum BinaryStatus {
   active
   inactive
