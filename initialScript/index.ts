@@ -204,6 +204,7 @@ const main = async () => {
             id: generateUuid(),
             name: "Website Revamp",
             workspace_id: workspace.id,
+            manager_id: manager.id,
             start_date: new Date(),
             end_date: new Date(new Date().setMonth(new Date().getMonth() + 6)),
             status: "active",

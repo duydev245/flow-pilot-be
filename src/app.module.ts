@@ -11,9 +11,12 @@ import CustomZodValidationPipe from './shared/pipes/custom-zod-validation.pipe'
 import { FeatureModule } from './routes/feature/feature.module'
 import { PackageModule } from './routes/package/package.module'
 import { WorkspaceModule } from 'src/routes/workspace/workspace.module'
+import { FocusLogModule } from './routes/focus-log/focus-log.module';
+import { NotificationModule } from './routes/notification/notification.module';
+import { MicroFeedbackModule } from './routes/micro-feedback/micro-feedback.module';
 
 @Module({
-  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule],
+  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, NotificationModule, MicroFeedbackModule],
   controllers: [AppController],
   providers: [
     AppService,
