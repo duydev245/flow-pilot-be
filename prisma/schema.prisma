@@ -248,14 +248,13 @@ model OverallPerformance {
 model DailyFocusLog {
   id              Int       @id @default(autoincrement())
   user_id         String    @db.Uuid
-  date            DateTime  @db.Date
   focused_minutes Int
   note            String?
   created_at      DateTime  @default(now())
   updated_at      DateTime? @updatedAt
   user            User      @relation(fields: [user_id], references: [id])
 
-  @@index([user_id, date])
+  @@index([user_id])
 }
 
 model Project {
@@ -301,6 +300,8 @@ model Task {
   name                  String
   description           String?
   time_spent_in_minutes Int?
+  start_date            DateTime
+  due_date              DateTime
   start_at              DateTime
   completed_at          DateTime?
   created_at            DateTime               @default(now())
