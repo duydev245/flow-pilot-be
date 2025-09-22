@@ -179,8 +179,8 @@ export class TaskService {
         totalWeightAll = 0
       for (const r of userAllReviews) {
         let weight = 1
-        if (r.task.priority === 'high') weight = 2
-        else if (r.task.priority === 'medium') weight = 1.5
+        if (r.task.priority === TaskPriority.high) weight = 2
+        else if (r.task.priority === TaskPriority.medium) weight = 1.5
         totalScoreAll += r.quality_score * weight
         totalWeightAll += weight
       }
