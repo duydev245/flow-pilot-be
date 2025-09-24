@@ -1,9 +1,11 @@
-import { NotFoundException, BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { NotFoundException, BadRequestException, Injectable, Logger, Inject } from '@nestjs/common';
 import { SuccessResponse } from 'src/shared/sucess';
 import { SharedNotificationRepository } from '../repositories/shared-notification.repo';
 import { NotificationCreateType, NotificationUpdateType } from '../models/shared-notification.model';
 import { NotificationErrors, UserNotFoundException } from '../error';
 import { SharedUserRepository } from '../repositories/shared-user.repo';
+import { NotificationGateway } from 'src/web-socket/notification.gateway';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class SharedNotificationService {
@@ -11,7 +13,8 @@ export class SharedNotificationService {
 
 	constructor(
 		private readonly sharedNotificationRepository: SharedNotificationRepository,
-		private readonly sharedUserRepository: SharedUserRepository
+		private readonly sharedUserRepository: SharedUserRepository,
+		@Inject(EventEmitter2) private eventEmitter: EventEmitter2,
 	) { }
 
 	async checkUserExists(user_id: string) {
@@ -79,8 +82,8 @@ export class SharedNotificationService {
 	}
 
 	// Get all notifications
-	async findAll() {
-		const result = await this.sharedNotificationRepository.findAll();
+	async findAll(page: number, pageSize: number) {
+		const result = await this.sharedNotificationRepository.findAllWithPagination(page, pageSize);
 		return SuccessResponse('Get notification list successfully', result);
 	}
 
@@ -112,4 +115,22 @@ export class SharedNotificationService {
 			throw new BadRequestException(NotificationErrors.DeleteFailed);
 		}
 	}
+
+	async createAndSend(data: NotificationCreateType) {
+		const notification = await this.sharedNotificationRepository.create(data);
+		const count = await this.sharedNotificationRepository.countUnread(data.user_id);
+
+		this.eventEmitter.emit('notification.created', {
+			userId: data.user_id,
+			notification,
+			unreadCount: count,
+		});
+
+		return notification;
+	}
+
+	async countUnread(user_id: string) {
+		return await this.sharedNotificationRepository.countUnread(user_id);
+	}
+
 }

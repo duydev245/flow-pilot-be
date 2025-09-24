@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common'
+import { forwardRef, Global, Module } from '@nestjs/common'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { HashingService } from './services/hashing.service'
 import { TokenService } from './services/token.service'
@@ -13,6 +13,7 @@ import { SharedWorkspaceRepository } from './repositories/shared-workspace.repo'
 import { SharedRoleRepository } from './repositories/shared-role.repo'
 import { SharedNotificationService } from './services/shared-notification.service'
 import { SharedNotificationRepository } from './repositories/shared-notification.repo'
+import { S3StorageService } from './services/s3-storage.service'
 
 const sharedServices = [
   PrismaService,
@@ -23,11 +24,13 @@ const sharedServices = [
   SharedWorkspaceRepository,
   SharedRoleRepository,
   SharedNotificationService,
-  SharedNotificationRepository
+  SharedNotificationRepository,
+  S3StorageService
 ]
 
 @Global()
 @Module({
+  imports: [JwtModule],
   providers: [
     ...sharedServices,
     AccessTokenGuard,
@@ -37,7 +40,6 @@ const sharedServices = [
       useClass: AuthenticationGuard,
     },
   ],
-  exports: sharedServices,
-  imports: [JwtModule],
+  exports: [...sharedServices],
 })
 export class SharedModule { }

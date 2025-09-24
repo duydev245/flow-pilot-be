@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, ParseIntPipe, Patch, Query } from '@nestjs/common';
 import { Roles } from 'src/shared/decorators/roles.decorator';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 import { GetUserId } from 'src/shared/decorators/active-user.decorator';
@@ -21,8 +21,11 @@ export class NotificationController {
   // Get all notifications (Super Admin only)
   @Get()
   @Roles([RoleName.SuperAdmin])
-  findAll() {
-    return this.sharedNotificationService.findAll();
+  findAll(
+    @Param('page') page: number = 1,
+    @Param('pageSize') pageSize: number = 10
+  ) {
+    return this.sharedNotificationService.findAll(page, pageSize);
   }
 
   // Create a new notification (Super Admin only)
@@ -31,7 +34,8 @@ export class NotificationController {
   create(
     @Body() data: NotificationCreateDto
   ) {
-    return this.sharedNotificationService.create(data);
+    return this.sharedNotificationService.createAndSend(data);
+    // return this.sharedNotificationService.create(data);
   }
 
   // Get all notifications for the current user
@@ -49,14 +53,14 @@ export class NotificationController {
   }
 
   // Mark all notifications as read for the current user
-  @Put('mark-all-as-read')
+  @Patch('mark-all-as-read')
   @Roles([RoleName.Employee, RoleName.Admin, RoleName.ProjectManager, RoleName.SuperAdmin])
   markAllAsRead(@GetUserId() userId: string) {
     return this.sharedNotificationService.markAllAsReadByUserId(userId);
   }
 
   // Mark a specific notification as read for the current user
-  @Put('mark-as-read/:id')
+  @Patch('mark-as-read/:id')
   @Roles([RoleName.Employee, RoleName.Admin, RoleName.ProjectManager, RoleName.SuperAdmin])
   markAsRead(@GetUserId() userId: string, @Param('id', ParseIntPipe) id: number) {
     return this.sharedNotificationService.markAsReadByUserIdAndId(userId, id);

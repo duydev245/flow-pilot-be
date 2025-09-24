@@ -15,9 +15,25 @@ import { FocusLogModule } from './routes/focus-log/focus-log.module';
 import { MicroFeedbackModule } from './routes/micro-feedback/micro-feedback.module';
 import { TaskModule } from './routes/task/task.module';
 import { NotificationModule } from './routes/notification/notification.module';
+import { WebSocketModule } from './web-socket/web-socket.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
-  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, MicroFeedbackModule, TaskModule, NotificationModule],
+  imports: [
+    SharedModule,
+    AuthModule,
+    ProjectModule,
+    UserModule,
+    FeatureModule,
+    PackageModule,
+    WorkspaceModule,
+    FocusLogModule,
+    MicroFeedbackModule,
+    TaskModule,
+    NotificationModule,
+    WebSocketModule,
+    EventEmitterModule.forRoot(),
+  ],
   controllers: [AppController],
   providers: [
     AppService,

@@ -10,6 +10,18 @@ export class SharedNotificationRepository {
     return this.prisma.notification.create({ data });
   }
 
+  async findAllWithPagination(page: number, pageSize: number) {
+    const [items, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { created_at: 'desc' },
+      }),
+      this.prisma.notification.count(),
+    ]);
+    return { items, total, page, pageSize };
+  }
+
   async findAll() {
     return this.prisma.notification.findMany();
   }
@@ -41,5 +53,9 @@ export class SharedNotificationRepository {
 
   async delete(id: number) {
     return this.prisma.notification.delete({ where: { id } });
+  }
+
+  async countUnread(user_id: string) {
+    return this.prisma.notification.count({ where: { user_id, is_read: false } });
   }
 }

@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import * as express from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { APIKeyGuard } from './shared/guards/api-key.guard';
+import { WebSocketAdapter } from './web-socket/web-socket.adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +12,7 @@ async function bootstrap() {
   app.use(express.static("."))
   // app.useGlobalPipes(new ZodValidationPipe());
   app.useGlobalGuards(new APIKeyGuard());
+  app.useWebSocketAdapter(new WebSocketAdapter(app));
 
   const config = new DocumentBuilder()
     .setTitle('Flow Pilot')
