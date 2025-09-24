@@ -97,6 +97,7 @@ export class TaskService {
   }
 
   async getTaskById(id: string) {
+    console.log('id: ', id);
     try {
       const result = await this.taskRepository.getTaskById(id)
       return SuccessResponse('Task retrieved successfully', result)

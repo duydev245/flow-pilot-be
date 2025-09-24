@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   ProjecAdmintUpdateDto,
@@ -16,6 +16,8 @@ import { ProjectService } from './project.service'
 
 @Controller('project')
 @ApiTags('Project Module')
+@ApiSecurity('apiKey')
+@ApiBearerAuth('access-token')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
@@ -104,5 +106,4 @@ export class ProjectController {
   deleteProjectByUser(@Param('id') id: string, @GetWorkSpaceId() workspace_id: string) {
     return this.projectService.deleteProjectByUser(id, workspace_id)
   }
-
 }

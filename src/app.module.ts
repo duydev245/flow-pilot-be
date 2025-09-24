@@ -15,9 +15,10 @@ import { FocusLogModule } from './routes/focus-log/focus-log.module';
 import { NotificationModule } from './routes/notification/notification.module';
 import { MicroFeedbackModule } from './routes/micro-feedback/micro-feedback.module';
 import { TaskModule } from './routes/task/task.module';
+import { PerformanceModule } from './routes/performance/performance.module';
 
 @Module({
-  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, NotificationModule, MicroFeedbackModule, TaskModule],
+  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, NotificationModule, MicroFeedbackModule, TaskModule, PerformanceModule],
   controllers: [AppController],
   providers: [
     AppService,
