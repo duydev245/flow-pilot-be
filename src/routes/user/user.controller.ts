@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUserBodyDTO, UserCreateBodyDto, UserCreateByAdminBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto, UserUpdateProfileBodyDto } from 'src/routes/user/user.dto'
@@ -42,8 +42,12 @@ export class UserController {
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  getAllUsersBySuperAdmin(@GetUserId() actorId: string) {
-    return this.userService.getAllUsersBySuperAdmin(actorId)
+  getAllUsersBySuperAdmin(
+    @GetUserId() actorId: string,
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ) {
+    return this.userService.getAllUsersBySuperAdmin(actorId, Number(page), Number(pageSize));
   }
 
   @Get('/super-admin/:id')
@@ -101,8 +105,13 @@ export class UserController {
   @Roles([RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  getAllUsersByAdmin(@GetUserId() actorId: string, @GetWorkSpaceId() workspaceId: string) {
-    return this.userService.getAllUsersByAdmin(actorId, workspaceId)
+  getAllUsersByAdmin(
+    @GetUserId() actorId: string,
+    @GetWorkSpaceId() workspaceId: string,
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10,
+  ) {
+    return this.userService.getAllUsersByAdmin(actorId, workspaceId, Number(page), Number(pageSize))
   }
 
   @Get('/admin/:id')
