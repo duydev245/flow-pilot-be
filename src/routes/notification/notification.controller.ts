@@ -22,10 +22,10 @@ export class NotificationController {
   @Get()
   @Roles([RoleName.SuperAdmin])
   findAll(
-    @Param('page') page: number = 1,
-    @Param('pageSize') pageSize: number = 10
+    @Query('page') page: number = 1,
+    @Query('pageSize') pageSize: number = 10
   ) {
-    return this.sharedNotificationService.findAll(page, pageSize);
+    return this.sharedNotificationService.findAll(Number(page), Number(pageSize));
   }
 
   // Create a new notification (Super Admin only)

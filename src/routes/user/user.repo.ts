@@ -9,47 +9,70 @@ import { PrismaService } from 'src/shared/services/prisma.service'
 export class UserRepository {
   constructor(private readonly prismaService: PrismaService) { }
 
-  getAllUsers(actorId: string) {
-    return this.prismaService.user.findMany({
-      where: {
-        id: {
-          not: actorId,
+
+
+  async getAllUsers(actorId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit
+    const [items, total] = await Promise.all([
+      this.prismaService.user.findMany({
+        where: {
+          id: {
+            not: actorId,
+          },
         },
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatar_url: true,
-        department_id: true,
-        role_id: true,
-        workspace_id: true,
-        status: true,
-      },
-    })
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar_url: true,
+          department_id: true,
+          role_id: true,
+          workspace_id: true,
+          status: true,
+        },
+        skip,
+        take: limit,
+      }),
+      this.prismaService.user.count({
+        where: {
+          id: {
+            not: actorId,
+          },
+        },
+      }),
+    ])
+    return { items, total, page, limit }
   }
 
-  getAllUsersByWorkspaceId(actorId: string, workspaceId: string) {
-    return this.prismaService.user.findMany({
-      where: {
-        id: { not: actorId },
-        workspace_id: workspaceId,
-        role_id: {
-          not: RoleNameId.SuperAdmin, // exclude super admin
-          in: [RoleNameId.Admin, RoleNameId.ProjectManager, RoleNameId.Employee], // include only these roles
+  async getAllUsersByWorkspaceId(actorId: string, workspaceId: string, page: number, limit: number) {
+    const skip = (page - 1) * limit
+    const where = {
+      id: { not: actorId },
+      workspace_id: workspaceId,
+      role_id: {
+        not: RoleNameId.SuperAdmin,
+        in: [RoleNameId.Admin, RoleNameId.ProjectManager, RoleNameId.Employee],
+      },
+    }
+    const [items, total] = await Promise.all([
+      this.prismaService.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar_url: true,
+          department_id: true,
+          role_id: true,
+          workspace_id: true,
+          status: true,
         },
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatar_url: true,
-        department_id: true,
-        role_id: true,
-        workspace_id: true,
-        status: true,
-      },
-    })
+        skip,
+        take: limit,
+      }),
+      this.prismaService.user.count({ where }),
+    ])
+    return { items, total, page, limit }
   }
 
   getUserById(userId: string) {
