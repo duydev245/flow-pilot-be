@@ -40,6 +40,14 @@ export class TaskController {
   getAllTaskReviews() {
     return this.taskService.getAllTaskReviews()
   }
+  
+  @Get('get-all-task-rejects')
+  @Roles([RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getAllTaskRejects() {
+    return this.taskService.getAllTaskRejects()
+  }
 
   @Get(':id')
   @Roles([RoleName.ProjectManager, RoleName.Employee, RoleName.Admin, RoleName.SuperAdmin])

@@ -97,7 +97,6 @@ export class TaskService {
   }
 
   async getTaskById(id: string) {
-    console.log('id: ', id);
     try {
       const result = await this.taskRepository.getTaskById(id)
       return SuccessResponse('Task retrieved successfully', result)
@@ -346,6 +345,16 @@ export class TaskService {
     try {
       const result = await this.taskRepository.getAllTaskReviews()
       return SuccessResponse('Task reviews retrieved successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async getAllTaskRejects() {
+    try {
+      const result = await this.taskRepository.getAllTaskRejects()
+      return SuccessResponse('Task rejects retrieved successfully', result)
     } catch (error) {
       this.logger.error(error.message)
       throw error

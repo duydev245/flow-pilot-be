@@ -15,6 +15,9 @@ export class PerformanceService {
       this.performanceRepository.getPerformanceData(dto),
     ])
 
+    // 1.1) Lấy tài liệu liên quan (notes, comment, review)
+    const relatedDocs = await this.performanceRepository.getRelatedDocuments(dto.userId, dto.fromDate, dto.toDate)
+
     // 2) Tổng hợp số liệu cơ bản
     const totalCompleted = perfData.reduce((s, d) => s + (d.task_completed ?? 0), 0)
     const totalDelay = perfData.reduce((s, d) => s + (d.task_delay_count ?? 0), 0)
@@ -50,7 +53,7 @@ export class PerformanceService {
     // Để data là mảng rỗng vì không có số liệu chi tiết
     const stressAnalyzing = [{ label: analyzingText, data: [] }]
 
-    // 4) Gọi AI để tạo summary (không suy đoán ngoài dữ liệu)
+    // 4) Gọi AI để tạo summary (không suy đoán ngoài dữ liệu, có tài liệu liên quan)
     const aiSummary = await this.callAIApiForSummary(
       {
         id: user?.id,
@@ -65,6 +68,7 @@ export class PerformanceService {
       {
         totals: { totalCompleted, totalDelay, avgBurnout, avgQuality, delayRatio },
       },
+      relatedDocs,
     )
 
     // 5) Trả về DTO cho dashboard
@@ -86,10 +90,6 @@ export class PerformanceService {
     }
   }
 
-  /**
-   * Gọi Gemini để sinh phần tóm tắt hiệu suất (summary).
-   * Lưu ý: Node 18+ có sẵn fetch. Nếu môi trường cũ, cài node-fetch và import tương ứng.
-   */
   private async callAIApiForSummary(
     user: any,
     overall: any,
@@ -104,6 +104,7 @@ export class PerformanceService {
         delayRatio: number
       }
     },
+    relatedDocs?: string[],
   ): Promise<string> {
     if (!apiKey) {
       return 'Thiếu API key cho Gemini. Vui lòng cấu hình GEMINI_API_KEY.'
@@ -138,6 +139,11 @@ export class PerformanceService {
       '',
       '[THEO THỜI GIAN - GẦN NHẤT]',
       JSON.stringify(recentPerf, null, 2),
+      '',
+      '[TÀI LIỆU LIÊN QUAN]',
+      ...(relatedDocs && relatedDocs.length > 0
+        ? relatedDocs.map((d, i) => `- ${d}`)
+        : ['(Không có tài liệu liên quan)']),
       '',
       'Yêu cầu:',
       '- Chỉ sử dụng thông tin đã cho.',
