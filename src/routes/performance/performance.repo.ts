@@ -4,9 +4,6 @@ import { PerformanceEvaluationRequestDto } from './performance.dto'
 
 @Injectable()
 export class PerformanceRepository {
-  /**
-   * Cập nhật process cho project
-   */
   async updateProjectProcess(projectId: string, process: number) {
     return this.prismaService.project.update({
       where: { id: projectId },
@@ -105,18 +102,12 @@ export class PerformanceRepository {
     })
   }
 
-  /**
-   * Lấy thông tin dự án theo id
-   */
   async getProjectById(projectId: string) {
     return this.prismaService.project.findUnique({
       where: { id: projectId },
     })
   }
 
-  /**
-   * Lấy danh sách thành viên dự án (ProjectUser join User)
-   */
   async getProjectMembers(projectId: string) {
     return this.prismaService.projectUser.findMany({
       where: { project_id: projectId },
@@ -126,9 +117,7 @@ export class PerformanceRepository {
     })
   }
 
-  /**
-   * Lấy performance data của user trong dự án
-   */
+
   async getUserProjectPerformanceData(userId: string, projectId: string) {
     return this.prismaService.performanceData.findMany({
       where: {

@@ -1,23 +1,18 @@
-import { Body, Controller, Post, UseGuards, Get, Query } from '@nestjs/common'
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common'
 import { PerformanceService } from './performance.service'
 
-import { PerformanceEvaluationRequestDto } from './performance.dto'
+import { ZodSerializerDto } from 'nestjs-zod'
+import { RoleName } from 'src/shared/constants/role.constant'
 import { GetUserId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
-import { RoleName } from 'src/shared/constants/role.constant'
-import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
-import { ZodSerializerDto } from 'nestjs-zod'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
+import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
+import { PerformanceEvaluationRequestDto } from './performance.dto'
 
 @Controller('performance')
 export class PerformanceController {
   constructor(private readonly performanceService: PerformanceService) {}
 
-
-  /**
-   * Lấy thống kê chi tiết các loại task: số lượng theo từng trạng thái (completed, in progress, overdue, v.v.), tỉ lệ thay đổi so với tuần trước
-   * GET /performance/project-tasks-stats?projectId=xxx
-   */
   @Get('project-tasks-stats')
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
@@ -38,10 +33,7 @@ export class PerformanceController {
   async getProjectKpi(@Query('projectId') projectId: string) {
     return await this.performanceService.getProjectKpi(projectId)
   }
-  /**
-   * Lấy tóm tắt AI về hiệu suất dự án trong 7 ngày gần nhất (hoặc theo khoảng thời gian)
-   * GET /performance/project-ai-analysis?projectId=xxx&fromDate=yyyy-mm-dd&toDate=yyyy-mm-dd
-   */
+
   @Get('project-ai-analysis')
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
@@ -57,10 +49,6 @@ export class PerformanceController {
     return await this.performanceService.evaluatePerformanceByAI(userId, { ...dto, userId })
   }
 
-  /**
-   * Lấy danh sách thành viên dự án kèm hiệu suất từng người
-   * GET /performance/project-members?projectId=xxx
-   */
   @Get('project-members')
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
