@@ -25,3 +25,35 @@ export const ExpiredOTPException = new UnauthorizedException({ code: 'EXPIRED_OT
 export const ForbiddenResourceException = new ForbiddenException({ code: 'FORBIDDEN_RESOURCE', message: 'You do not have permission to access this resource' })
 
 export const InvalidAPIKeyException = new UnauthorizedException({ code: 'INVALID_API_KEY', message: 'Invalid API Key' })
+
+
+export const NotificationErrors = {
+    NotFound: {
+        code: 'NOTIFICATION_NOT_FOUND',
+        message: 'Notification not found.'
+    },
+    CreateFailed: {
+        code: 'NOTIFICATION_CREATE_FAILED',
+        message: 'Failed to create notification.'
+    },
+    UpdateFailed: {
+        code: 'NOTIFICATION_UPDATE_FAILED',
+        message: 'Failed to update notification.'
+    },
+    DeleteFailed: {
+        code: 'NOTIFICATION_DELETE_FAILED',
+        message: 'Failed to delete notification.'
+    },
+    MarkAsReadFailed: {
+        code: 'NOTIFICATION_MARK_AS_READ_FAILED',
+        message: 'Failed to mark notification as read.'
+    },
+    MarkAllAsReadFailed: {
+        code: 'NOTIFICATION_MARK_ALL_AS_READ_FAILED',
+        message: 'Failed to mark all notifications as read.'
+    },
+    NoNotificationsToMarkAsRead: {
+        code: 'NOTIFICATION_NO_NOTIFICATIONS_TO_MARK_AS_READ',
+        message: 'No notifications to mark as read.'
+    }
+};

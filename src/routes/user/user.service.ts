@@ -106,9 +106,9 @@ export class UserService {
   }
 
   // Super admin routes
-  async getAllUsersBySuperAdmin(actorId: string) {
+  async getAllUsersBySuperAdmin(actorId: string, page: number = 1, pageSize: number = 10) {
     try {
-      const result = await this.userRepository.getAllUsers(actorId)
+      const result = await this.userRepository.getAllUsers(actorId, page, pageSize)
       return SuccessResponse('Get all users successful', result)
     } catch (error) {
       this.logger.error(error.message);
@@ -188,9 +188,9 @@ export class UserService {
   }
 
   // Admin routes
-  async getAllUsersByAdmin(actorId: string, workspaceId: string) {
+  async getAllUsersByAdmin(actorId: string, workspaceId: string, page: number = 1, pageSize: number = 10) {
     try {
-      const result = await this.userRepository.getAllUsersByWorkspaceId(actorId, workspaceId)
+      const result = await this.userRepository.getAllUsersByWorkspaceId(actorId, workspaceId, page, pageSize)
       return SuccessResponse('Get all users successful', result)
     } catch (error) {
       this.logger.error(error.message);
