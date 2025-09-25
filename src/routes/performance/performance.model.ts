@@ -1,7 +1,6 @@
 import z from 'zod'
 
 export const PerformanceEvaluationRequestSchema = z.object({
-  userId: z.uuid(),
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
 })

@@ -1,22 +1,22 @@
 import { Injectable } from '@nestjs/common'
-import envConfig from 'src/shared/config'
 import { PerformanceRepository } from 'src/routes/performance/performance.repo'
-import { PerformanceEvaluationRequestDto, PerformanceEvaluationResponseDto } from './performance.dto'
+import envConfig from 'src/shared/config'
+import { SuccessResponse } from 'src/shared/sucess'
 
 @Injectable()
 export class PerformanceService {
   constructor(private readonly performanceRepository: PerformanceRepository) {}
 
-  async evaluatePerformanceByAI(dto: PerformanceEvaluationRequestDto): Promise<PerformanceEvaluationResponseDto> {
+  async evaluatePerformanceByAI(userId: string, dto: any) {
     // 1) Lấy dữ liệu thô từ DB
     const [user, overall, perfData] = await Promise.all([
-      this.performanceRepository.getUserInfo(dto.userId),
-      this.performanceRepository.getOverallPerformance(dto.userId),
-      this.performanceRepository.getPerformanceData(dto),
+      this.performanceRepository.getUserInfo(userId),
+      this.performanceRepository.getOverallPerformance(userId),
+      this.performanceRepository.getPerformanceData(userId, dto),
     ])
 
     // 1.1) Lấy tài liệu liên quan (notes, comment, review)
-    const relatedDocs = await this.performanceRepository.getRelatedDocuments(dto.userId, dto.fromDate, dto.toDate)
+    const relatedDocs = await this.performanceRepository.getRelatedDocuments({ userId, ...dto })
 
     // 2) Tổng hợp số liệu cơ bản
     const totalCompleted = perfData.reduce((s, d) => s + (d.task_completed ?? 0), 0)
@@ -64,7 +64,7 @@ export class PerformanceService {
       },
       overall,
       perfData,
-      envConfig.GEMINI_API_KEY,
+      envConfig.GPT_API_KEY,
       {
         totals: { totalCompleted, totalDelay, avgBurnout, avgQuality, delayRatio },
       },
@@ -74,10 +74,9 @@ export class PerformanceService {
     // 5) Trả về DTO cho dashboard
     const joinedISO = user?.created_at ? new Date(user.created_at).toISOString() : ''
 
-    // Lấy position: chỉ để mặc định vì không có trường position trong overall
     const position = 'Software Engineer'
 
-    return {
+    return SuccessResponse('Evaluate performance successfully', {
       summary: aiSummary,
       stressRate,
       workPerformance,
@@ -87,7 +86,7 @@ export class PerformanceService {
       name: user?.name ?? '',
       position,
       department: user?.department?.name ?? '',
-    }
+    })
   }
 
   private async callAIApiForSummary(
@@ -107,10 +106,9 @@ export class PerformanceService {
     relatedDocs?: string[],
   ): Promise<string> {
     if (!apiKey) {
-      return 'Thiếu API key cho Gemini. Vui lòng cấu hình GEMINI_API_KEY.'
+      return 'Thiếu API key cho GPT. Vui lòng cấu hình GPT_API_KEY.'
     }
 
-    // Rút gọn dữ liệu lịch sử để prompt gọn nhẹ (ví dụ 12 bản ghi gần nhất)
     const recentPerf = perfData.slice(-12).map((d) => ({
       period: d.period ?? d.month ?? d.week ?? '',
       completed: d.task_completed ?? 0,
@@ -119,7 +117,6 @@ export class PerformanceService {
       burnout: d.burnout_index ?? null,
     }))
 
-    // Tạo prompt rõ ràng, không chèn code rác
     const prompt = [
       'Bạn là chuyên gia HR/People Analytics.',
       'Dựa DUY NHẤT trên dữ liệu dưới đây, hãy viết một đoạn đánh giá ngắn gọn (3–6 câu), súc tích, không suy đoán ngoài dữ liệu.',
@@ -148,42 +145,49 @@ export class PerformanceService {
       'Yêu cầu:',
       '- Chỉ sử dụng thông tin đã cho.',
       '- Nếu dữ liệu thiếu, hãy nói rõ là thiếu.',
+      '- Nếu toàn bộ chỉ số = 0 (Completed, Delay, Burnout, Quality) thì hãy kết luận đây là nhân viên mới (new joiner) và nêu rõ dữ liệu chưa đủ để đánh giá xu hướng.',
       '- Không nêu tên cá nhân khác hoặc suy đoán nguyên nhân ngoài dữ liệu.',
     ].join('\n')
 
-    // Gọi API với timeout để tránh treo
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`
+    const url = 'https://api.openai.com/v1/chat/completions'
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15000) // 15s
 
     try {
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          model: envConfig.OPENAI_MODEL || 'gpt-4',
+          temperature: 0.2,
+          messages: [
+            { role: 'system', content: 'You are a helpful HR/People Analytics assistant.' },
+            { role: 'user', content: prompt },
+          ],
         }),
         signal: controller.signal,
       })
 
-      const text = await response.text()
       clearTimeout(timeout)
-
       let data: any
       try {
-        data = JSON.parse(text)
+        data = await response.json()
       } catch {
         // Khi backend trả về non-JSON (hiếm)
-        return `Không parse được phản hồi AI. Raw: ${text}`
+        return `Không parse được phản hồi AI. Raw: ${await response.text()}`
       }
 
       if (!response.ok) {
         // Trả về thông báo lỗi cụ thể để dev dễ theo dõi
-        const msg = data?.error?.message || `Gemini API error: status ${response.status}, body: ${text}`
+        const msg = data?.error?.message || `OpenAI API error: status ${response.status}, body: ${JSON.stringify(data)}`
         return msg
       }
 
-      const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Không nhận được phản hồi tóm tắt từ AI.'
+      // OpenAI API: data.choices[0].message.content
+      const aiText = data?.choices?.[0]?.message?.content || 'Không nhận được phản hồi tóm tắt từ AI.'
       return aiText.trim()
     } catch (e) {
       const err = e as Error

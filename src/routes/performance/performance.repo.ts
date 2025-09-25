@@ -8,8 +8,9 @@ export class PerformanceRepository {
   /**
    * Truy xuất tài liệu liên quan (notes, comment, review) cho RAG
    */
-  async getRelatedDocuments(userId: string, fromDate?: string, toDate?: string): Promise<string[]> {
+  async getRelatedDocuments(dto: { userId: string; fromDate?: string; toDate?: string }): Promise<string[]> {
     // Lấy các note từ PerformanceData
+    const { userId, fromDate, toDate } = dto
     const perfNotes = await this.prismaService.performanceData.findMany({
       where: {
         user_id: userId,
@@ -51,7 +52,6 @@ export class PerformanceRepository {
     // Lấy các reject (lý do bị từ chối/note) từ TaskRejectionHistory
     const rejections = await this.prismaService.taskRejectionHistory.findMany({
       where: {
-        task_id: undefined, // lấy reject của user, không phải của task cụ thể
         rejected_by: userId,
         ...(fromDate && { created_at: { gte: new Date(fromDate) } }),
         ...(toDate && { created_at: { lte: new Date(toDate) } }),
@@ -72,8 +72,8 @@ export class PerformanceRepository {
   }
   constructor(private readonly prismaService: PrismaService) {}
 
-  async getPerformanceData(dto: PerformanceEvaluationRequestDto) {
-    const { userId, fromDate, toDate } = dto
+  async getPerformanceData(userId: string, dto: PerformanceEvaluationRequestDto) {
+    const { fromDate, toDate } = dto
     // Lấy performance data theo user và khoảng thời gian
     return this.prismaService.performanceData.findMany({
       where: {
