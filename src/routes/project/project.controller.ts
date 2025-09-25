@@ -7,6 +7,7 @@ import {
   ProjectBodyDto,
   ProjectUpdateDto,
 } from 'src/routes/project/project.dto'
+import type { AssignUsersToProjectDto } from './project.model'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { GetWorkSpaceId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -86,7 +87,6 @@ export class ProjectController {
   @Roles([RoleName.Admin, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   createProjectByUser(@Body() body: ProjectBodyDto, @GetWorkSpaceId() workspace_id: string) {
-    // Only Admin and Project Manager can create project, so we can reuse the same method as super admin
     return this.projectService.createProjectByUser(body, workspace_id)
   }
 
@@ -95,7 +95,6 @@ export class ProjectController {
   @Roles([RoleName.Admin, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   updateProjectByUser(@Param('id') id: string, @Body() body: ProjectUpdateDto, @GetWorkSpaceId() workspace_id: string) {
-    // Only Admin and Project Manager can update project, so we can reuse the same method as super admin
     return this.projectService.updateProjectByUser(id, body, workspace_id)
   }
 
@@ -105,5 +104,13 @@ export class ProjectController {
   @ZodSerializerDto(MessageResDTO)
   deleteProjectByUser(@Param('id') id: string, @GetWorkSpaceId() workspace_id: string) {
     return this.projectService.deleteProjectByUser(id, workspace_id)
+  }
+
+  @Post('/:id/assign-users')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
+  @ZodSerializerDto(MessageResDTO)
+  assignUsersToProject(@Param('id') projectId: string, @Body() body: AssignUsersToProjectDto) {
+    return this.projectService.assignUsersToProject(projectId, body)
   }
 }

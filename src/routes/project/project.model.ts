@@ -49,3 +49,14 @@ export type CreateProjectType = z.infer<typeof CreateProjectSchema>
 export type CreateProjectByAdminType = z.infer<typeof CreateProjectSchemaByAdmin>
 export type UpdateProjectByAdminType = z.infer<typeof UpdateProjectByAdminSchema>
 export type UpdateProjectByUserType = z.infer<typeof UpdateProjectByUserSchema>
+
+// DTO cho assign nhiều user vào project
+export const AssignUsersToProjectSchema = z.object({
+  users: z.array(
+    z.object({
+      user_id: z.string(),
+      role: z.string().optional(),
+    })
+  ),
+});
+export type AssignUsersToProjectDto = z.infer<typeof AssignUsersToProjectSchema>;

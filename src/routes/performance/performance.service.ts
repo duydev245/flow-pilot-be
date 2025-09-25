@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PerformanceRepository } from 'src/routes/performance/performance.repo'
 import envConfig from 'src/shared/config'
+import { TaskStatus } from 'src/shared/constants/task.constant'
 import { SuccessResponse } from 'src/shared/sucess'
 
 @Injectable()
@@ -87,6 +88,164 @@ export class PerformanceService {
       position,
       department: user?.department?.name ?? '',
     })
+  }
+
+  async getProjectOverview(projectId: string) {
+    // Lấy thông tin dự án
+    const project = await this.performanceRepository.getProjectById(projectId)
+    if (!project) return { message: 'Project not found', data: null }
+
+    // Lấy danh sách task của dự án
+    const tasks = await this.performanceRepository.getTasksByProjectId(projectId)
+
+    // Thống kê số lượng task theo trạng thái
+    const totalTasks = tasks.length
+    const completedTasks = tasks.filter((t) => t.status === TaskStatus.completed).length
+    const overdueTasks = tasks.filter((t) => t.status === TaskStatus.overdued).length
+    const inProgressTasks = tasks.filter(
+      (t) => t.status === TaskStatus.doing || t.status === TaskStatus.reviewing || t.status === TaskStatus.feedbacked,
+    ).length
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+    // Tính process dựa vào completionRate (giả sử process là completionRate)
+    const process = completionRate
+
+    // Lưu process vào project
+    await this.performanceRepository.updateProjectProcess(projectId, process)
+
+    return {
+      message: 'Project overview fetched successfully',
+      data: {
+        project: {
+          id: project.id,
+          name: project.name,
+          description: project.description,
+          start_date: project.start_date,
+          end_date: project.end_date,
+          process,
+          team_size: project.team_size,
+          status: project.status,
+        },
+        totalTasks,
+        completedTasks,
+        overdueTasks,
+        inProgressTasks,
+        completionRate,
+      },
+    }
+  }
+
+  async getProjectMembers(projectId: string) {
+    const members = await this.performanceRepository.getProjectMembers(projectId)
+    const tasks = await this.performanceRepository.getTasksByProjectId(projectId)
+
+    const memberStats = await Promise.all(
+      members.map(async (member) => {
+        const assignedTasks = tasks.filter((t) => t.assignees.some((a) => a.user_id === member.user.id))
+        const completedTasks = assignedTasks.filter((t) => t.status === 'completed').length
+        const overdueTasks = assignedTasks.filter((t) => t.status === 'overdued').length
+        // Lấy điểm đánh giá trung bình từ PerformanceData
+        const perfData = await this.performanceRepository.getUserProjectPerformanceData(member.user.id, projectId)
+        const avgQuality =
+          perfData.length > 0 ? perfData.reduce((s, d) => s + (d.quality_score ?? 0), 0) / perfData.length : null
+        return {
+          id: member.user.id,
+          name: member.user.name,
+          avatar_url: member.user.avatar_url,
+          job_title: member.role,
+          status: member.user.status,
+          assignedTasks: assignedTasks.length,
+          completedTasks,
+          overdueTasks,
+          avgQuality,
+        }
+      }),
+    )
+    return { message: 'Project members fetched successfully', data: memberStats }
+  }
+
+  /**
+   * Lấy KPI team dự án: tỉ lệ hoàn thành, tiến độ, số task hoàn thành/in progress
+   */
+  async getProjectKpi(projectId: string) {
+    // Lấy thông tin dự án
+    const project = await this.performanceRepository.getProjectById(projectId)
+    if (!project) return { message: 'Project not found', data: null }
+
+    // Lấy danh sách task của dự án
+    const tasks = await this.performanceRepository.getTasksByProjectId(projectId)
+    const totalTasks = tasks.length
+    const completedTasks = tasks.filter((t) => t.status === 'completed').length
+    const inProgressTasks = tasks.filter(
+      (t) => t.status === 'doing' || t.status === 'reviewing' || t.status === 'feedbacked',
+    ).length
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+
+    // Tổng giá trị KPI: demo lấy process * số task hoàn thành (có thể thay đổi theo business)
+    const kpiValue = (project.process ?? 0) * completedTasks
+
+    return {
+      message: 'Project KPI fetched successfully',
+      data: {
+        projectId,
+        process: project.process,
+        completionRate,
+        completedTasks,
+        inProgressTasks,
+        kpiValue,
+      },
+    }
+  }
+
+  /**
+   * Lấy tóm tắt AI về hiệu suất dự án trong 7 ngày gần nhất (hoặc theo khoảng thời gian)
+   */
+  async getProjectAIAnalysis({
+    projectId,
+    fromDate,
+    toDate,
+  }: {
+    projectId: string
+    fromDate?: string
+    toDate?: string
+  }) {
+    // Lấy danh sách thành viên dự án
+    const members = await this.performanceRepository.getProjectMembers(projectId)
+    // Lấy performance data của tất cả thành viên trong dự án
+    const perfDataList = await Promise.all(
+      members.map((member) => this.performanceRepository.getPerformanceData(member.user.id, { fromDate, toDate })),
+    )
+    // Gộp dữ liệu lại
+    const allPerfData = perfDataList.flat()
+    // Lấy tổng hợp các chỉ số
+    const totalCompleted = allPerfData.reduce((s, d) => s + (d.task_completed ?? 0), 0)
+    const totalDelay = allPerfData.reduce((s, d) => s + (d.task_delay_count ?? 0), 0)
+    const avgBurnout =
+      allPerfData.length > 0 ? allPerfData.reduce((s, d) => s + (d.burnout_index ?? 0), 0) / allPerfData.length : 0
+    const avgQuality =
+      allPerfData.length > 0 ? allPerfData.reduce((s, d) => s + (d.quality_score ?? 0), 0) / allPerfData.length : 0
+
+    // Gọi AI để tạo summary (có thể dùng lại callAIApiForSummary hoặc tuỳ chỉnh prompt)
+    const aiSummary = await this.callAIApiForSummary(
+      { name: 'Project', department: '', status: '', created_at: '' },
+      null,
+      allPerfData,
+      envConfig.GPT_API_KEY,
+      {
+        totals: { totalCompleted, totalDelay, avgBurnout, avgQuality, delayRatio: 0 },
+      },
+      [],
+    )
+    return {
+      message: 'Project AI analysis fetched successfully',
+      data: {
+        summary: aiSummary,
+        totalCompleted,
+        totalDelay,
+        avgBurnout,
+        avgQuality,
+      },
+    }
   }
 
   private async callAIApiForSummary(
@@ -195,6 +354,55 @@ export class PerformanceService {
       return 'Không thể kết nối AI: ' + err.message
     } finally {
       clearTimeout(timeout)
+    }
+  }
+
+  /**
+   * Lấy thống kê chi tiết các loại task: số lượng theo từng trạng thái (completed, in progress, overdue, v.v.), tỉ lệ thay đổi so với tuần trước
+   */
+  async getProjectTasksStats(projectId: string) {
+    // Lấy danh sách task của dự án
+    const tasks = await this.performanceRepository.getTasksByProjectId(projectId)
+
+    // Đếm số lượng theo từng trạng thái
+    const statusCounts: Record<string, number> = {}
+    for (const t of tasks) {
+      statusCounts[t.status] = (statusCounts[t.status] || 0) + 1
+    }
+
+    // Lấy ngày hiện tại và ngày đầu tuần trước
+    const now = new Date()
+    const startOfThisWeek = new Date(now)
+    startOfThisWeek.setDate(now.getDate() - now.getDay())
+    const startOfLastWeek = new Date(startOfThisWeek)
+    startOfLastWeek.setDate(startOfThisWeek.getDate() - 7)
+    const endOfLastWeek = new Date(startOfThisWeek)
+
+    // Lấy task tuần trước
+    const tasksLastWeek = tasks.filter((t) => {
+      if (!t.updated_at) return false
+      const updated = new Date(t.updated_at)
+      return updated >= startOfLastWeek && updated < endOfLastWeek
+    })
+    const statusCountsLastWeek: Record<string, number> = {}
+    for (const t of tasksLastWeek) {
+      statusCountsLastWeek[t.status] = (statusCountsLastWeek[t.status] || 0) + 1
+    }
+
+    // Tính tỉ lệ thay đổi so với tuần trước
+    const statusChangeRatio: Record<string, number> = {}
+    for (const status in statusCounts) {
+      const prev = statusCountsLastWeek[status] || 0
+      const curr = statusCounts[status] || 0
+      statusChangeRatio[status] = prev === 0 ? (curr > 0 ? 1 : 0) : (curr - prev) / prev
+    }
+
+    return {
+      message: 'Project tasks stats fetched successfully',
+      data: {
+        statusCounts,
+        statusChangeRatio,
+      },
     }
   }
 }

@@ -92,4 +92,17 @@ export class ProjectRepository {
       },
     })
   }
+
+  // Assign nhiều user vào project
+  async assignUsersToProject(projectId: string, users: { user_id: string; role?: string }[]) {
+    // Tạo các bản ghi ProjectUser
+    const created = await this.prismaService.projectUser.createMany({
+      data: users.map((u) => ({ project_id: projectId, user_id: u.user_id, role: u.role })),
+      skipDuplicates: true,
+    })
+    // Cập nhật team_size
+    const teamSize = await this.prismaService.projectUser.count({ where: { project_id: projectId } })
+    await this.prismaService.project.update({ where: { id: projectId }, data: { team_size: teamSize } })
+    return created
+  }
 }

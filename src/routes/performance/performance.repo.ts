@@ -1,13 +1,18 @@
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { Injectable } from '@nestjs/common'
-
 import { PerformanceEvaluationRequestDto } from './performance.dto'
 
 @Injectable()
 export class PerformanceRepository {
   /**
-   * Truy xuất tài liệu liên quan (notes, comment, review) cho RAG
+   * Cập nhật process cho project
    */
+  async updateProjectProcess(projectId: string, process: number) {
+    return this.prismaService.project.update({
+      where: { id: projectId },
+      data: { process },
+    })
+  }
   async getRelatedDocuments(dto: { userId: string; fromDate?: string; toDate?: string }): Promise<string[]> {
     // Lấy các note từ PerformanceData
     const { userId, fromDate, toDate } = dto
@@ -96,6 +101,48 @@ export class PerformanceRepository {
       where: { id: userId },
       include: {
         department: true,
+      },
+    })
+  }
+
+  /**
+   * Lấy thông tin dự án theo id
+   */
+  async getProjectById(projectId: string) {
+    return this.prismaService.project.findUnique({
+      where: { id: projectId },
+    })
+  }
+
+  /**
+   * Lấy danh sách thành viên dự án (ProjectUser join User)
+   */
+  async getProjectMembers(projectId: string) {
+    return this.prismaService.projectUser.findMany({
+      where: { project_id: projectId },
+      include: {
+        user: true,
+      },
+    })
+  }
+
+  /**
+   * Lấy performance data của user trong dự án
+   */
+  async getUserProjectPerformanceData(userId: string, projectId: string) {
+    return this.prismaService.performanceData.findMany({
+      where: {
+        user_id: userId,
+        project_id: projectId,
+      },
+    })
+  }
+
+  async getTasksByProjectId(projectId: string) {
+    return this.prismaService.task.findMany({
+      where: { project_id: projectId },
+      include: {
+        assignees: true,
       },
     })
   }
