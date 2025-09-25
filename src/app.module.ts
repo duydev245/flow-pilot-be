@@ -17,6 +17,11 @@ import { TaskModule } from './routes/task/task.module';
 import { NotificationModule } from './routes/notification/notification.module';
 import { WebSocketModule } from './web-socket/web-socket.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { PerformanceModule } from './routes/performance/performance.module';
+
+
+@Module({
+  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, NotificationModule, MicroFeedbackModule, TaskModule, PerformanceModule],
 
 @Module({
   imports: [
