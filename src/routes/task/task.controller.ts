@@ -21,7 +21,7 @@ import { TaskService } from './task.service'
 @Controller('task')
 @ApiTags('Task Module')
 @ApiSecurity('apiKey')
-@ApiBearerAuth('access-token  ')
+@ApiBearerAuth('access-token')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
