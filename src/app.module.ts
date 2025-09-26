@@ -11,17 +11,13 @@ import CustomZodValidationPipe from './shared/pipes/custom-zod-validation.pipe'
 import { FeatureModule } from './routes/feature/feature.module'
 import { PackageModule } from './routes/package/package.module'
 import { WorkspaceModule } from 'src/routes/workspace/workspace.module'
-import { FocusLogModule } from './routes/focus-log/focus-log.module';
-import { MicroFeedbackModule } from './routes/micro-feedback/micro-feedback.module';
-import { TaskModule } from './routes/task/task.module';
-import { NotificationModule } from './routes/notification/notification.module';
-import { WebSocketModule } from './web-socket/web-socket.module';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { PerformanceModule } from './routes/performance/performance.module';
-
-
-@Module({
-  imports: [SharedModule, AuthModule, ProjectModule, UserModule, FeatureModule, PackageModule, WorkspaceModule, FocusLogModule, NotificationModule, MicroFeedbackModule, TaskModule, PerformanceModule],
+import { FocusLogModule } from './routes/focus-log/focus-log.module'
+import { MicroFeedbackModule } from './routes/micro-feedback/micro-feedback.module'
+import { TaskModule } from './routes/task/task.module'
+import { NotificationModule } from './routes/notification/notification.module'
+import { WebSocketModule } from './web-socket/web-socket.module'
+import { EventEmitterModule } from '@nestjs/event-emitter'
+import { PerformanceModule } from './routes/performance/performance.module'
 
 @Module({
   imports: [
@@ -38,6 +34,7 @@ import { PerformanceModule } from './routes/performance/performance.module';
     NotificationModule,
     WebSocketModule,
     EventEmitterModule.forRoot(),
+    PerformanceModule,
   ],
   controllers: [AppController],
   providers: [
@@ -49,7 +46,7 @@ import { PerformanceModule } from './routes/performance/performance.module';
     {
       provide: APP_FILTER,
       useClass: CatchEverythingFilter,
-    }
+    },
   ],
 })
-export class AppModule { }
+export class AppModule {}
