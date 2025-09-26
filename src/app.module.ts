@@ -17,6 +17,7 @@ import { TaskModule } from './routes/task/task.module';
 import { NotificationModule } from './routes/notification/notification.module';
 import { WebSocketModule } from './web-socket/web-socket.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { FileModule } from './routes/file/file.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     NotificationModule,
     WebSocketModule,
     EventEmitterModule.forRoot(),
+    FileModule,
   ],
   controllers: [AppController],
   providers: [
