@@ -28,5 +28,15 @@ jobs:
           push: true
           tags: duyadmindocker/flow-pilot-be:latest
 
+  deploy:
+    needs: build
+    runs-on: aws-ec2
+    steps:
+      - name: Pull image from Docker Hub
+        run: docker pull duyadmindocker/flow-pilot-be:latest
 
+      - name: Delete old container if exists
+        run: docker rm -f flow-pilot-be-container || true
 
+      - name: Run docker container
+        run: docker container run -dp 4000:4000 --name flow-pilot-be-container duyadmindocker/flow-pilot-be:latest
