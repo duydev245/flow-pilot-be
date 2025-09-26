@@ -30,7 +30,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: aws-ec2
+    runs-on: self-hosted
     steps:
       - name: Pull image from Docker Hub
         run: docker pull duyadmindocker/flow-pilot-be:latest
