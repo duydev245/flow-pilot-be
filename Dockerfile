@@ -1,5 +1,5 @@
 # Use official Node.js runtime
-FROM node:18-alpine
+FROM node:22-alpine
 
 # Set working directory
 WORKDIR /app
@@ -44,6 +44,9 @@ COPY prisma ./prisma/
 # Install all dependencies first (for build)
 RUN npm ci
 
+# Install NestJS CLI globally (đảm bảo có nest command)
+RUN npm install -g @nestjs/cli
+
 # Copy source code
 COPY . .
 
@@ -55,9 +58,6 @@ RUN npx prisma generate
 
 # Build the application
 RUN npm run build
-
-# Remove dev dependencies and reinstall only production deps
-RUN rm -rf node_modules && npm ci --only=production && npm cache clean --force
 
 # Generate Prisma client again for production
 RUN npx prisma generate
