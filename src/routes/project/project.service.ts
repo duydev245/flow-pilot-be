@@ -1,3 +1,4 @@
+import type { AssignUsersToProjectDto } from './project.model'
 import { Injectable, Logger } from '@nestjs/common'
 import {
   CreateProjectByAdminType,
@@ -13,6 +14,16 @@ import { SuccessResponse } from 'src/shared/sucess'
 export class ProjectService {
   constructor(private readonly projectRepository: ProjectRepository) {}
   private readonly logger = new Logger(ProjectService.name)
+
+  async assignUsersToProject(projectId: string, dto: AssignUsersToProjectDto) {
+    try {
+      const result = await this.projectRepository.assignUsersToProject(projectId, dto.users)
+      return SuccessResponse('Assign users to project successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
 
   async getAllProjectBySuperAdmin({ page, limit }: { page: number; limit: number }) {
     try {

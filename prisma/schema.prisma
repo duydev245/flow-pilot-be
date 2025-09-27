@@ -329,7 +329,6 @@ model TaskReview {
   task_id       String @unique @db.Uuid
   reviewer_id   String @db.Uuid
   task_owner_id String @db.Uuid
-
   quality_score Float
   notes         String?
   reviewed_at   DateTime  @default(now())
@@ -348,7 +347,7 @@ model TaskReview {
 
 model UploadFile {
   id          Int       @id @default(autoincrement())
-  task_id     String    @db.Uuid
+  task_id     String?    @db.Uuid
   file_name   String
   file_url    String
   file_size   Int?
@@ -357,7 +356,7 @@ model UploadFile {
   uploaded_by String    @db.Uuid
   created_at  DateTime  @default(now())
   updated_at  DateTime? @updatedAt
-  task        Task      @relation(fields: [task_id], references: [id])
+  task        Task?      @relation(fields: [task_id], references: [id])
   uploader    User      @relation(fields: [uploaded_by], references: [id])
 
   @@index([task_id])

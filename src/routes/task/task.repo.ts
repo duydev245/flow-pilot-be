@@ -208,4 +208,9 @@ export class TaskRepository {
       include: { task: true },
     })
   }
+  async getAllTaskRejects() {
+    return this.prismaService.taskRejectionHistory.findMany({
+      include: { task: true },
+    })
+  }
 }
