@@ -350,4 +350,14 @@ export class TaskService {
       throw error
     }
   }
+
+  async getAllTaskRejects() {
+    try {
+      const result = await this.taskRepository.getAllTaskRejects()
+      return SuccessResponse('Task rejects retrieved successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
 }

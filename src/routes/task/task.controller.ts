@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put, UseGuards, Delete } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -20,6 +20,8 @@ import { TaskService } from './task.service'
 
 @Controller('task')
 @ApiTags('Task Module')
+@ApiSecurity('apiKey')
+@ApiBearerAuth('access-token')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
@@ -30,12 +32,21 @@ export class TaskController {
   getTasks() {
     return this.taskService.getAllTasks()
   }
+
   @Get('get-all-task-reviews')
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   getAllTaskReviews() {
     return this.taskService.getAllTaskReviews()
+  }
+  
+  @Get('get-all-task-rejects')
+  @Roles([RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getAllTaskRejects() {
+    return this.taskService.getAllTaskRejects()
   }
 
   @Get(':id')

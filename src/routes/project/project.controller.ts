@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   ProjecAdmintUpdateDto,
@@ -7,6 +7,7 @@ import {
   ProjectBodyDto,
   ProjectUpdateDto,
 } from 'src/routes/project/project.dto'
+import type { AssignUsersToProjectDto } from './project.model'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { GetWorkSpaceId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -16,6 +17,8 @@ import { ProjectService } from './project.service'
 
 @Controller('project')
 @ApiTags('Project Module')
+@ApiSecurity('apiKey')
+@ApiBearerAuth('access-token')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
@@ -84,7 +87,6 @@ export class ProjectController {
   @Roles([RoleName.Admin, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   createProjectByUser(@Body() body: ProjectBodyDto, @GetWorkSpaceId() workspace_id: string) {
-    // Only Admin and Project Manager can create project, so we can reuse the same method as super admin
     return this.projectService.createProjectByUser(body, workspace_id)
   }
 
@@ -93,7 +95,6 @@ export class ProjectController {
   @Roles([RoleName.Admin, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   updateProjectByUser(@Param('id') id: string, @Body() body: ProjectUpdateDto, @GetWorkSpaceId() workspace_id: string) {
-    // Only Admin and Project Manager can update project, so we can reuse the same method as super admin
     return this.projectService.updateProjectByUser(id, body, workspace_id)
   }
 
@@ -105,4 +106,11 @@ export class ProjectController {
     return this.projectService.deleteProjectByUser(id, workspace_id)
   }
 
+  @Post('/:id/assign-users')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
+  @ZodSerializerDto(MessageResDTO)
+  assignUsersToProject(@Param('id') projectId: string, @Body() body: AssignUsersToProjectDto) {
+    return this.projectService.assignUsersToProject(projectId, body)
+  }
 }
