@@ -1,0 +1,65 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: ['aws']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: duyadmindocker/flow-pilot-be:latest
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+    steps:
+      - name: Pull image from Docker Hub
+        run: docker pull duyadmindocker/flow-pilot-be:latest
+
+      - name: Delete old container if exists
+        run: docker rm -f flow-pilot-be-container || true
+
+      - name: Create env file and run container
+        run: |
+          cat > container.env << EOF
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}
+          SECRET_API_KEY=${{ secrets.SECRET_API_KEY }}
+          GENERAL_PASSWORD=${{ secrets.GENERAL_PASSWORD }}
+          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          EOF
+
+          echo "Removing old container..."
+          docker rm -f flow-pilot-be-container || true
+
+          echo "Starting new container..."
+          docker container run -dp 4000:8080 --name flow-pilot-be-container --env-file container.env duyadmindocker/flow-pilot-be:latest
+
+          echo "Cleaning up env file..."
+          rm container.env
+
+          echo "Checking container status..."
+          docker ps | grep flow-pilot-be-container
+
+          echo "Container logs:"
+          sleep 3
+          docker logs --tail 20 flow-pilot-be-container

@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_S3_BUCKET_NAME=${AWS_S3_BUCKET_NAME}
+    depends_on:
+      - db
+    volumes:
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # PostgreSQL database
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+      - POSTGRES_DB=${DB_NAME:-flow_pilot}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # Optional: for initial DB setup
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Redis (optional - for caching/sessions)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # Development service (for local development)
+  app-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+      - "9229:9229" # Debug port
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@db:5432/${DB_NAME:-flow_pilot}
+      - JWT_SECRET=${JWT_SECRET:-dev_secret}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./uploads:/app/uploads
+    command: npm run start:dev
+    depends_on:
+      - db
+    networks:
+      - app-network
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
