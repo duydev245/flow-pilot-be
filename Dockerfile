@@ -4,46 +4,38 @@ FROM node:18-alpine
 # Set working directory
 WORKDIR /app
 
+# Install curl for health check (TRƯỚC KHI TẠO USER)
+RUN apk add --no-cache curl
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nestjs -u 1001
 
-# Create a .env file if it doesn't exist (TRƯỚC KHI COPY)
-RUN touch .env
-
-# Set environment variables
+# Set environment variables (chỉ non-sensitive configs)
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Database configuration
-ENV DATABASE_URL="postgresql://postgres:flowpilot123@database-1.cbimqosckvz2.ap-southeast-1.rds.amazonaws.com:5432/mydb?schema=public"
-
-# JWT configuration
-ENV ACCESS_TOKEN_SECRET="R0zt4LipgHmHaBKw"
+# Non-sensitive configuration
 ENV ACCESS_TOKEN_EXPIRES_IN=30m
-
-ENV REFRESH_TOKEN_SECRET="8jibylSt53iXruuW"
 ENV REFRESH_TOKEN_EXPIRES_IN=1d
+ENV OTP_EXPIRES_IN=5m
 
-# API configuration
-ENV SECRET_API_KEY="hoangthanhduy"
-
-# Default user credentials
+# Default user credentials (non-sensitive)
 ENV GENERAL_NAME="duyhandsome"
-ENV GENERAL_PASSWORD="duyhandsome123"
 
-# Email configuration
+# Email configuration (non-sensitive)
 ENV SUPERADMIN_EMAIL="superadmin@flowpilot.io.vn"
 ENV ADMIN_EMAIL="admin@acme.com"
 ENV MANAGER_EMAIL="hoangduy.study@gmail.com"
 ENV EMPLOYEE_EMAIL="duyhtse182314@fpt.edu.vn"
 
-# OTP and email service configuration
-ENV OTP_EXPIRES_IN=5m
-ENV RESEND_API_KEY="re_4k2gLLVx_JrmfJPqujFhjac5wg9K3ZiuS"
-
-# Install curl for health check
-RUN apk add --no-cache curl
+# Sensitive data - để trống, sẽ được set khi run container
+ENV DATABASE_URL=""
+ENV ACCESS_TOKEN_SECRET=""
+ENV REFRESH_TOKEN_SECRET=""
+ENV SECRET_API_KEY=""
+ENV GENERAL_PASSWORD=""
+ENV RESEND_API_KEY=""
 
 # Copy package files
 COPY package*.json ./
@@ -52,8 +44,11 @@ COPY prisma ./prisma/
 # Install all dependencies first (for build)
 RUN npm ci
 
-# Copy source code (SẼ GHI ĐÈ FILE .ENV NẾU CÓ)
+# Copy source code
 COPY . .
+
+# Create a .env file if it doesn't exist (SAU KHI COPY)
+RUN touch .env
 
 # Generate Prisma client
 RUN npx prisma generate
