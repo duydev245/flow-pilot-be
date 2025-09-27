@@ -7,9 +7,7 @@ import { PrismaService } from 'src/shared/services/prisma.service'
 
 @Injectable()
 export class UserRepository {
-  constructor(private readonly prismaService: PrismaService) { }
-
-
+  constructor(private readonly prismaService: PrismaService) {}
 
   async getAllUsers(actorId: string, page: number, limit: number) {
     const skip = (page - 1) * limit
@@ -66,6 +64,34 @@ export class UserRepository {
           role_id: true,
           workspace_id: true,
           status: true,
+          role: {
+            select: {
+              id: true,
+              role: true,
+            },
+          },
+          department: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          projectUsers: {
+            select: {
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                  status: true,
+                },
+              },
+            },
+            where: {
+              project: {
+                status: 'active',
+              },
+            },
+          },
         },
         skip,
         take: limit,
@@ -93,10 +119,10 @@ export class UserRepository {
     })
   }
 
-  getUserByAdmin(where: { id: string, workspace_id: string }) {
+  getUserByAdmin(where: { id: string; workspace_id: string }) {
     return this.prismaService.user.findUnique({
       where: {
-        ...where
+        ...where,
       },
       select: {
         id: true,
@@ -116,14 +142,14 @@ export class UserRepository {
       data: {
         ...data,
         status: UserStatus.active,
-      }
+      },
     })
   }
 
-  updateUserByAdmin(where: { id: string, workspace_id: string }, data: UserUpdateType) {
+  updateUserByAdmin(where: { id: string; workspace_id: string }, data: UserUpdateType) {
     return this.prismaService.user.update({
       where: {
-        ...where
+        ...where,
       },
       data,
       select: {
