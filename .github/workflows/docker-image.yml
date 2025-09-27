@@ -37,13 +37,29 @@ jobs:
       - name: Delete old container if exists
         run: docker rm -f flow-pilot-be-container || true
 
-      - name: Run docker container
+      - name: Create env file and run container
         run: |
-          docker container run -dp 4000:8080 --name flow-pilot-be-container \
-            -e DATABASE_URL="${{ secrets.DATABASE_URL }}" \
-            -e ACCESS_TOKEN_SECRET="${{ secrets.ACCESS_TOKEN_SECRET }}" \
-            -e REFRESH_TOKEN_SECRET="${{ secrets.REFRESH_TOKEN_SECRET }}" \
-            -e SECRET_API_KEY="${{ secrets.SECRET_API_KEY }}" \
-            -e GENERAL_PASSWORD="${{ secrets.GENERAL_PASSWORD }}" \
-            -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
-            duyadmindocker/flow-pilot-be:latest
+          cat > container.env << EOF
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}
+          SECRET_API_KEY=${{ secrets.SECRET_API_KEY }}
+          GENERAL_PASSWORD=${{ secrets.GENERAL_PASSWORD }}
+          RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          EOF
+
+          echo "Removing old container..."
+          docker rm -f flow-pilot-be-container || true
+
+          echo "Starting new container..."
+          docker container run -dp 4000:8080 --name flow-pilot-be-container --env-file container.env duyadmindocker/flow-pilot-be:latest
+
+          echo "Cleaning up env file..."
+          rm container.env
+
+          echo "Checking container status..."
+          docker ps | grep flow-pilot-be-container
+
+          echo "Container logs:"
+          sleep 3
+          docker logs --tail 20 flow-pilot-be-container
