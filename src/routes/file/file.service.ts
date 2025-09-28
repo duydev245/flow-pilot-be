@@ -3,13 +3,14 @@ import { S3StorageService } from 'src/shared/services/s3-storage.service'
 import { FileRepository } from './file.repo'
 import { GetFileFail, InvalidFile, UploadFileFail, DeleteFileFail } from './file.error'
 import { SuccessResponse } from 'src/shared/sucess'
+import path from 'path'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 const ALLOWED_EXT = ['.pdf', '.txt', '.csv', '.doc', '.docx', '.xlsx']
 
 function getExtension(filename: string) {
-    const idx = filename.lastIndexOf('.')
-    return idx === -1 ? '' : filename.slice(idx).toLowerCase()
+    const ext = path.extname(filename || '').toLowerCase()
+    return ext
 }
 
 function sanitizeFilename(name: string, maxLen = 255) {
@@ -48,9 +49,12 @@ export class FileService {
     async uploadForTask(params: { user_id: string; task_id: string; file: Express.Multer.File }) {
         const { user_id, task_id, file } = params
         this.validateFile(file)
-        let key: string
+        let file_key: string
+        let file_url: string
         try {
-            key = await this.s3.uploadFile(file)
+            const res = await this.s3.uploadFile(file)
+            file_key = res.key
+            file_url = res.url
         } catch (e) {
             throw UploadFileFail
         }
@@ -58,7 +62,8 @@ export class FileService {
         const created = await this.repo.create({
             task_id,
             file_name: safeName,
-            file_url: key,
+            file_url,
+            file_key,
             file_size: file.size,
             mime_type: file.mimetype,
             uploaded_by: user_id,
@@ -69,9 +74,12 @@ export class FileService {
     async uploadForUser(params: { user_id: string; file: Express.Multer.File }) {
         const { user_id, file } = params
         this.validateFile(file)
-        let key: string
+        let file_key: string
+        let file_url: string
         try {
-            key = await this.s3.uploadFile(file)
+            const res = await this.s3.uploadFile(file)
+            file_key = res.key
+            file_url = res.url
         } catch (e) {
             throw UploadFileFail
         }
@@ -79,7 +87,8 @@ export class FileService {
         const created = await this.repo.create({
             task_id: null,
             file_name: safeName,
-            file_url: key,
+            file_url,
+            file_key,
             file_size: file.size,
             mime_type: file.mimetype,
             uploaded_by: user_id,
@@ -92,7 +101,7 @@ export class FileService {
         const found = await this.repo.findById(id)
         if (!found) throw GetFileFail
         try {
-            await this.s3.deleteFile(found.file_url)
+            await this.s3.deleteFile(found.file_key)
         } catch (e) {
             throw DeleteFileFail
         }
@@ -104,7 +113,17 @@ export class FileService {
     async downloadById(id: number) {
         const found = await this.repo.findById(id)
         if (!found) throw GetFileFail
-        const buffer = await this.s3.downloadFile(found.file_url)
+        const buffer = await this.s3.downloadFile(found.file_key)
         return { buffer, meta: found }
+    }
+
+    async getFilesByTaskId(task_id: string, page?: number, limit?: number, search?: string) {
+        const result = await this.repo.findByTaskId(task_id, page, limit, search)
+        return SuccessResponse('Files retrieved successfully', result)
+    }
+
+    async getFilesByUserId(user_id: string, page: number = 1, limit: number = 10, search?: string) {
+        const result = await this.repo.findByUserId(user_id, page, limit, search)
+        return SuccessResponse('Files retrieved successfully', result)
     }
 }

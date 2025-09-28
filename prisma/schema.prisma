@@ -215,9 +215,9 @@ model PerformanceData {
   project           Project   @relation(fields: [project_id], references: [id])
   user              User      @relation(fields: [user_id], references: [id])
 
+  @@unique([user_id, project_id])
   @@index([user_id])
   @@index([project_id])
-  @@unique([user_id, project_id])
 }
 
 model OverallPerformance {
@@ -234,8 +234,8 @@ model OverallPerformance {
   updated_at       DateTime? @updatedAt
   user             User      @relation(fields: [user_id], references: [id])
 
-  @@index([user_id])
   @@unique([user_id])
+  @@index([user_id])
 }
 
 model DailyFocusLog {
@@ -305,7 +305,7 @@ model Task {
   reviews               TaskReview[]
   assignees             TaskUser[]
   files                 UploadFile[]
-  checklists            TaskChecklist[]  
+  checklists            TaskChecklist[]
 
   @@index([project_id])
   @@index([project_id, status])
@@ -326,9 +326,9 @@ model TaskUser {
 model TaskReview {
   id Int @id @default(autoincrement())
 
-  task_id       String @unique @db.Uuid
-  reviewer_id   String @db.Uuid
-  task_owner_id String @db.Uuid
+  task_id       String    @unique @db.Uuid
+  reviewer_id   String    @db.Uuid
+  task_owner_id String    @db.Uuid
   quality_score Float
   notes         String?
   reviewed_at   DateTime  @default(now())
@@ -347,16 +347,17 @@ model TaskReview {
 
 model UploadFile {
   id          Int       @id @default(autoincrement())
-  task_id     String?    @db.Uuid
+  task_id     String?   @db.Uuid
   file_name   String
-  file_url    String
+  file_url    String?
+  file_key    String
   file_size   Int?
   mime_type   String?
   uploaded_at DateTime  @default(now())
   uploaded_by String    @db.Uuid
   created_at  DateTime  @default(now())
   updated_at  DateTime? @updatedAt
-  task        Task?      @relation(fields: [task_id], references: [id])
+  task        Task?     @relation(fields: [task_id], references: [id])
   uploader    User      @relation(fields: [uploaded_by], references: [id])
 
   @@index([task_id])
@@ -383,7 +384,7 @@ model TaskRejectionHistory {
   id          Int       @id @default(autoincrement())
   task_id     String    @db.Uuid
   rejected_by String    @db.Uuid
-  rejected_at DateTime @default(now())
+  rejected_at DateTime  @default(now())
   reason      String
   notes       String?
   created_at  DateTime  @default(now())
@@ -394,21 +395,23 @@ model TaskRejectionHistory {
   @@index([task_id])
   @@index([rejected_by])
 }
+
 model TaskChecklist {
   id           Int          @id @default(autoincrement())
   task_id      String       @db.Uuid
   title        String
-  status       BinaryStatus 
-  is_completed Boolean?      
+  status       BinaryStatus
+  is_completed Boolean?
   completed_at DateTime?
   created_at   DateTime     @default(now())
   updated_at   DateTime?    @updatedAt
 
-  task         Task         @relation(fields: [task_id], references: [id])
+  task Task @relation(fields: [task_id], references: [id])
 
   @@index([task_id])
   @@index([status])
 }
+
 enum BinaryStatus {
   active
   inactive
