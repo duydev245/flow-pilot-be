@@ -36,13 +36,15 @@ ENV REFRESH_TOKEN_SECRET=""
 ENV SECRET_API_KEY=""
 ENV GENERAL_PASSWORD=""
 ENV RESEND_API_KEY=""
+ENV GPT_API_KEY=""
+ENV OPENAI_MODEL=""
 
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install all dependencies first (for build)
-RUN npm ci
+RUN npm ci --include=dev
 
 # Install NestJS CLI globally (đảm bảo có nest command)
 RUN npm install -g @nestjs/cli
