@@ -1,4 +1,3 @@
-(function(){})();
 import { NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common'
 
 export const GetFileFail = new NotFoundException({
