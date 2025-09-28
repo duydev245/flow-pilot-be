@@ -46,6 +46,8 @@ jobs:
           SECRET_API_KEY=${{ secrets.SECRET_API_KEY }}
           GENERAL_PASSWORD=${{ secrets.GENERAL_PASSWORD }}
           RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
+          GPT_API_KEY=${{ secrets.GPT_API_KEY }}
+          OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
           EOF
 
           echo "Removing old container..."
