@@ -24,12 +24,13 @@ import { GetUserId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
+import path from 'path'
 
 const uploadOptions = {
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (_: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    const ext = file.originalname?.slice(file.originalname.lastIndexOf('.')).toLowerCase() ?? ''
+    const ext = path.extname(file.originalname || '').toLowerCase()
     const allowed = ['.pdf', '.txt', '.csv', '.doc', '.docx', '.xlsx']
     if (!allowed.includes(ext)) return cb(new InvalidFileExtensionError('INVALID_FILE_EXTENSION') as any, false)
     cb(null, true)
