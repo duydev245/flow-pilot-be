@@ -17,17 +17,18 @@ model SystemRole {
 }
 
 model Package {
-  id                 String       @id @default(uuid()) @db.Uuid
-  name               String       @unique
-  duration_in_months Int          @default(1)
-  price              Float
-  description        String?
-  created_at         DateTime     @default(now())
-  updated_at         DateTime?    @updatedAt
-  status             BinaryStatus
-  orders             Order[]
-  workspaces         Workspace[]
-  features           Feature[]
+  id                  String                @id @default(uuid()) @db.Uuid
+  name                String                @unique
+  duration_in_months  Int                   @default(1)
+  price               Float
+  description         String?
+  created_at          DateTime              @default(now())
+  updated_at          DateTime?             @updatedAt
+  status              BinaryStatus
+  orders              Order[]
+  workspaces          Workspace[]
+  features            Feature[]
+  ConsultationRequest ConsultationRequest[]
 }
 
 model Feature {
@@ -62,21 +63,49 @@ model Workspace {
   @@index([status])
 }
 
+model ConsultationRequest {
+  id           Int                @id @default(autoincrement())
+  name         String
+  email        String             @unique
+  phone        String
+  company_name String?
+  package_id   String             @db.Uuid
+  note         String?
+  status       ConsultationStatus @default(new) // new|contacted|closed
+  created_at   DateTime           @default(now())
+  updated_at   DateTime?          @updatedAt
+
+  package Package @relation(fields: [package_id], references: [id])
+
+  @@index([package_id])
+}
+
+enum ConsultationStatus {
+  new
+  contacted
+  closed
+}
+
 model Order {
   id           String      @id @default(uuid()) @db.Uuid
-  workspace_id String      @db.Uuid
+  workspace_id String?     @db.Uuid
   package_id   String      @db.Uuid
-  order_date   DateTime
   total_amount Float
   created_at   DateTime    @default(now())
   updated_at   DateTime?   @updatedAt
-  status       OrderStatus
+  status       OrderStatus @default(pending)
   package      Package     @relation(fields: [package_id], references: [id])
-  workspace    Workspace   @relation(fields: [workspace_id], references: [id])
+  workspace    Workspace?  @relation(fields: [workspace_id], references: [id])
   payments     Payment[]
 
   @@index([workspace_id])
   @@index([package_id])
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  canceled
 }
 
 model Payment {
@@ -84,14 +113,28 @@ model Payment {
   order_id       String        @db.Uuid
   payment_date   DateTime
   amount         Float
-  transaction_id String?
+  transaction_id String        @unique
   created_at     DateTime      @default(now())
   updated_at     DateTime?     @updatedAt
-  payment_method PaymentMethod
-  status         PaymentStatus
+  payment_method PaymentMethod @default(bank_transfer)
+  status         PaymentStatus @default(pending)
   order          Order         @relation(fields: [order_id], references: [id])
 
   @@index([order_id])
+}
+
+enum PaymentMethod {
+  credit_card
+  bank_transfer
+  momo
+  zalo_pay
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+  refunded
 }
 
 model Department {
@@ -424,26 +467,6 @@ enum NotificationType {
   task
   project
   system
-}
-
-enum OrderStatus {
-  pending
-  confirmed
-  canceled
-}
-
-enum PaymentMethod {
-  credit_card
-  bank_transfer
-  momo
-  zalo_pay
-}
-
-enum PaymentStatus {
-  pending
-  success
-  failed
-  refunded
 }
 
 enum ProjectStatus {
