@@ -56,9 +56,9 @@ export class EmailService {
         // Replace placeholders in the template with actual values
         const htmlContent = customerConsultationTemplate
             .replaceAll('{{subject}}', subject)
-            .replace('{{name}}', payload.name)
-            .replace('{{email}}', payload.email)
-            .replace('{{phone}}', payload.phone);
+            .replaceAll('{{name}}', payload.name)
+            .replaceAll('{{email}}', payload.email)
+            .replaceAll('{{phone}}', payload.phone);
 
         return await this.resend.emails.send({
             from: 'Flow Pilot <no-reply@flowpilot.io.vn>',
@@ -74,12 +74,12 @@ export class EmailService {
         // Replace placeholders in the template with actual values
         const htmlContent = salesConsultationTemplate
             .replaceAll('{{subject}}', subject)
-            .replace('{{name}}', payload.name)
-            .replace('{{email}}', payload.email)
-            .replace('{{phone}}', payload.phone)
-            .replace('{{company}}', payload.company || 'N/A')
-            .replace('{{package_name}}', payload.package_name)
-            .replace('{{note}}', payload.note || 'N/A');
+            .replaceAll('{{name}}', payload.name)
+            .replaceAll('{{email}}', payload.email)
+            .replaceAll('{{phone}}', payload.phone)
+            .replaceAll('{{company}}', payload.company)
+            .replaceAll('{{package_name}}', payload.package_name)
+            .replaceAll('{{note}}', payload.note);
 
         return await this.resend.emails.send({
             from: 'Flow Pilot <no-reply@flowpilot.io.vn>',
@@ -127,7 +127,6 @@ export class EmailService {
             html: htmlContent,
         });
     }
-
 
     async sendPaymentFailureEmail(payload: { email: string, package_name: string, order_id: string, amount: string }) {
         const subject = `[FLOW-PILOT] PAYMENT FAILED FOR ORDER #${payload.order_id}`;

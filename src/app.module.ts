@@ -19,6 +19,9 @@ import { WebSocketModule } from './web-socket/web-socket.module'
 import { EventEmitterModule } from '@nestjs/event-emitter'
 import { PerformanceModule } from './routes/performance/performance.module'
 import { FileModule } from './routes/file/file.module';
+import { ConsultationRequestModule } from './routes/consultation-request/consultation-request.module';
+import { OrderModule } from './routes/order/order.module';
+import { PaymentModule } from './routes/payment/payment.module';
 
 @Module({
   imports: [
@@ -37,6 +40,9 @@ import { FileModule } from './routes/file/file.module';
     EventEmitterModule.forRoot(),
     FileModule,
     PerformanceModule,
+    ConsultationRequestModule,
+    OrderModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
