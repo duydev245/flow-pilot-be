@@ -12,6 +12,7 @@ export class AuthRepository {
     return await this.prismaService.user.findFirst({
       where: {
         ...where,
+        status: 'active',
       },
       include: {
         role: true,
