@@ -7,7 +7,6 @@ export const PaymentStatus = {
 
 export type PaymentStatusType = (typeof PaymentStatus)[keyof typeof PaymentStatus]
 
-
 export const PaymentMethod = {
     credit_card: 'credit_card',
     bank_transfer: 'bank_transfer',
@@ -16,3 +15,5 @@ export const PaymentMethod = {
 } as const
 
 export type PaymentMethodType = (typeof PaymentMethod)[keyof typeof PaymentMethod]
+
+export const PREFIX_PAYMENT_CODE = 'DHFLP' // Don Hang Flow Pilot

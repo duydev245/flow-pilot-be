@@ -57,4 +57,4 @@ import { PaymentModule } from './routes/payment/payment.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

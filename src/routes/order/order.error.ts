@@ -1,4 +1,3 @@
-(function(){})()
 import { NotFoundException, BadRequestException } from '@nestjs/common'
 
 export const OrderNotFound = new NotFoundException({

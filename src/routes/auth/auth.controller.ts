@@ -61,12 +61,12 @@ export class AuthController {
     return this.authService.changePassword(body);
   }
 
-  @Get('test-access-token')
-  @ApiBearerAuth('access-token')
-  @Roles([RoleName.Employee])
-  @UseGuards(AuthRoleGuard)
-  testAccessToken() {
-    return { message: 'Access token is valid!' }
-  }
+  // @Get('test-access-token')
+  // @ApiBearerAuth('access-token')
+  // @Roles([RoleName.Employee])
+  // @UseGuards(AuthRoleGuard)
+  // testAccessToken() {
+  //   return { message: 'Access token is valid!' }
+  // }
 
 }

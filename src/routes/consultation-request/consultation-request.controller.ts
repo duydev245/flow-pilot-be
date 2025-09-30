@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ConsultationRequestService } from './consultation-request.service'
-import { ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   CreateConsultationRequestDto,
@@ -17,6 +17,8 @@ export class ConsultationRequestController {
   constructor(private readonly consultationRequestService: ConsultationRequestService) { }
 
   @Get()
+  @ApiSecurity('apiKey')
+  @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
@@ -28,6 +30,8 @@ export class ConsultationRequestController {
   }
 
   @Get(':id')
+  @ApiSecurity('apiKey')
+  @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
@@ -43,6 +47,8 @@ export class ConsultationRequestController {
   }
 
   @Put(':id')
+  @ApiSecurity('apiKey')
+  @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
@@ -51,6 +57,8 @@ export class ConsultationRequestController {
   }
 
   @Delete('delete/:id')
+  @ApiSecurity('apiKey')
+  @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
