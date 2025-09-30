@@ -14,6 +14,7 @@ import { SharedRoleRepository } from './repositories/shared-role.repo'
 import { SharedNotificationService } from './services/shared-notification.service'
 import { SharedNotificationRepository } from './repositories/shared-notification.repo'
 import { S3StorageService } from './services/s3-storage.service'
+import { SharedOrderRepository } from './repositories/shared-order.repo'
 
 const sharedServices = [
   PrismaService,
@@ -25,7 +26,8 @@ const sharedServices = [
   SharedRoleRepository,
   SharedNotificationService,
   SharedNotificationRepository,
-  S3StorageService
+  S3StorageService,
+  SharedOrderRepository
 ]
 
 @Global()

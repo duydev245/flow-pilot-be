@@ -104,30 +104,22 @@ model Order {
 
 enum OrderStatus {
   pending
-  confirmed
+  paid
   canceled
 }
 
 model Payment {
-  id             String        @id @default(uuid()) @db.Uuid
-  order_id       String        @db.Uuid
-  payment_date   DateTime
-  amount         Float
-  transaction_id String        @unique
-  created_at     DateTime      @default(now())
-  updated_at     DateTime?     @updatedAt
-  payment_method PaymentMethod @default(bank_transfer)
-  status         PaymentStatus @default(pending)
-  order          Order         @relation(fields: [order_id], references: [id])
+  id           Int           @id @default(autoincrement())
+  email        String        @db.VarChar(500)
+  order_id     String        @db.Uuid
+  payment_date DateTime
+  amount       Float
+  status       PaymentStatus
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  order        Order         @relation(fields: [order_id], references: [id])
 
   @@index([order_id])
-}
-
-enum PaymentMethod {
-  credit_card
-  bank_transfer
-  momo
-  zalo_pay
 }
 
 enum PaymentStatus {
@@ -135,6 +127,37 @@ enum PaymentStatus {
   success
   failed
   refunded
+}
+
+// model Payment {
+//   id             String        @id @default(uuid()) @db.Uuid
+//   order_id       String        @db.Uuid
+//   payment_date   DateTime
+//   amount         Float
+//   transaction_id String        @unique
+//   created_at     DateTime      @default(now())
+//   updated_at     DateTime?     @updatedAt
+//   payment_method PaymentMethod @default(bank_transfer)
+//   status         PaymentStatus @default(pending)
+//   order          Order         @relation(fields: [order_id], references: [id])
+
+//   @@index([order_id])
+// }
+
+model PaymentTransaction {
+  id                  Int      @id @default(autoincrement())
+  gateway             String   @db.VarChar(100)
+  transaction_date    DateTime @default(now())
+  account_number      String?  @db.VarChar(100)
+  sub_account         String?  @db.VarChar(250)
+  amount_in           Int      @default(0)
+  amount_out          Int      @default(0)
+  accumulated         Int      @default(0)
+  code                String?  @db.VarChar(250)
+  transaction_content String?  @db.Text
+  reference_number    String?  @db.VarChar(255)
+  body                String?  @db.Text
+  createdAt           DateTime @default(now())
 }
 
 model Department {

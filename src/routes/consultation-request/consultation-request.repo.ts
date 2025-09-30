@@ -34,7 +34,7 @@ export class ConsultationRequestRepository {
     return await this.prismaService.consultationRequest.create({ data })
   }
 
-  async update(id: number, body: Partial<CreateConsultationRequest>) {
+  async update(id: number, body: Partial<ConsultationRequestType>) {
     return await this.prismaService.consultationRequest.update({
       where: { id },
       data: { ...body, updated_at: new Date() },

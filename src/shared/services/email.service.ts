@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import envConfig from "../config";
 import fs from "fs";
 import path from "path";
+import { parse } from "date-fns";
 
 // Load the HTML template once when the module is initialized
 const template = fs.readFileSync(path.resolve('src/shared/email-templates/otp.html'), 'utf-8');
@@ -89,16 +90,21 @@ export class EmailService {
         });
     }
 
-    async sendPaymentRequestEmail(payload: { email: string, package_name: string, order_id: string, amount: string, qr_code_url: string }) {
+    async sendPaymentRequestEmail(payload: { email: string, package_name: string, order_id: string, payment_id: string, amount: string }) {
         const subject = `[FLOW-PILOT] PAYMENT REQUEST FOR ORDER #${payload.order_id}`;
+        const description = `DHFLP${payload.payment_id}`;
+        const qr_code_url = `https://qr.sepay.vn/img?acc=0987693153&bank=MBBank&amount=${payload.amount}&des=${description}`;
 
         // Replace placeholders in the template with actual values
         const htmlContent = paymentRequestTemplate
             .replaceAll('{{subject}}', subject)
-            .replace('{{order_id}}', payload.order_id)
-            .replace('{{package_name}}', payload.package_name)
-            .replace('{{amount}}', payload.amount)
-            .replace('{{qr_code_url}}', payload.qr_code_url);
+            .replaceAll('{{order_id}}', payload.order_id)
+            .replaceAll('{{package_name}}', payload.package_name)
+            .replaceAll('{{account_no}}', '0987693153')
+            .replaceAll('{{account_owner}}', 'BUI TUAN HAI')
+            .replaceAll('{{description}}', description)
+            .replaceAll('{{amount}}', payload.amount)
+            .replaceAll('{{qr_code_url}}', qr_code_url);
 
         return await this.resend.emails.send({
             from: 'Flow Pilot <no-reply@flowpilot.io.vn>',
@@ -108,17 +114,16 @@ export class EmailService {
         });
     }
 
-    async sendPaymentSuccessEmail(payload: { email: string, package_name: string, order_id: string, amount: string, paid_at: string, transaction_id: string }) {
+    async sendPaymentSuccessEmail(payload: { email: string, package_name: string, order_id: string, amount: string, paid_at: string }) {
         const subject = `[FLOW-PILOT] PAYMENT SUCCESSFUL FOR ORDER #${payload.order_id}`;
 
         // Replace placeholders in the template with actual values
         const htmlContent = paymentSuccessTemplate
             .replaceAll('{{subject}}', subject)
-            .replace('{{order_id}}', payload.order_id)
-            .replace('{{package_name}}', payload.package_name)
-            .replace('{{amount}}', payload.amount)
-            .replace('{{paid_at}}', payload.paid_at)
-            .replace('{{transaction_id}}', payload.transaction_id);
+            .replaceAll('{{order_id}}', payload.order_id)
+            .replaceAll('{{package_name}}', payload.package_name)
+            .replaceAll('{{amount}}', payload.amount)
+            .replaceAll('{{paid_at}}', payload.paid_at)
 
         return await this.resend.emails.send({
             from: 'Flow Pilot <no-reply@flowpilot.io.vn>',

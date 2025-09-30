@@ -64,6 +64,7 @@ export class WorkspaceService {
 
   async updateWorkspace(id: string, body: WorkspaceUpdateType) {
     try {
+      // if active -> send mail to admin workspace
       const result = await this.workspaceRepository.updateWorkspace(id, body)
       return SuccessResponse('Update workspace successfully', result)
     } catch (error) {

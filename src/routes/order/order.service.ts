@@ -47,7 +47,12 @@ export class OrderService {
 				if (!isWorkspaceExist) return WorkspaceNotFound
 			}
 
-			const result = await this.orderRepository.create(body)
+			const result = await this.orderRepository.create({
+				workspace_id: body.workspace_id,
+				package_id: body.package_id,
+				total_amount: isPackageExist.price,
+			})
+			
 			return SuccessResponse('Create order successfully', result)
 		} catch (error) {
 			this.logger.error(error.message)

@@ -1,7 +1,8 @@
 
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/services/prisma.service'
-import { OrderSchemaType, UpdateOrderType } from './order.model'
+import { UpdateOrderType } from './order.model'
+import { OrderSchemaType } from 'src/shared/models/shared-order.model';
 
 @Injectable()
 export class OrderRepository {

@@ -6,8 +6,12 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { Roles } from 'src/shared/decorators/roles.decorator'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
+import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
 
-@Controller('order')
+@Controller('Order')
+@ApiTags('Order')
+@ApiSecurity('apiKey')
+@ApiBearerAuth('access-token')
 export class OrderController {
   constructor(private readonly orderService: OrderService) { }
 

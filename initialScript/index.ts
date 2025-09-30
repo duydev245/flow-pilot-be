@@ -306,27 +306,27 @@ const main = async () => {
   })
 
   // 9. Order + Payment
-  const order = await prisma.order.create({
-    data: {
-      id: generateUuid(),
-      workspace_id: workspace.id,
-      package_id: pkgPro.id,
-      total_amount: 300,
-      status: 'confirmed',
-    },
-  })
+  // const order = await prisma.order.create({
+  //   data: {
+  //     id: generateUuid(),
+  //     workspace_id: workspace.id,
+  //     package_id: pkgPro.id,
+  //     total_amount: 300,
+  //     status: 'confirmed',
+  //   },
+  // })
 
-  await prisma.payment.create({
-    data: {
-      id: generateUuid(),
-      order_id: order.id,
-      payment_date: new Date(),
-      transaction_id: `TX-${Math.floor(Math.random() * 1000000)}`,
-      amount: 300,
-      payment_method: 'momo',
-      status: 'success',
-    },
-  })
+  // await prisma.payment.create({
+  //   data: {
+  //     id: generateUuid(),
+  //     order_id: order.id,
+  //     payment_date: new Date(),
+  //     transaction_id: `TX-${Math.floor(Math.random() * 1000000)}`,
+  //     amount: 300,
+  //     payment_method: 'momo',
+  //     status: 'success',
+  //   },
+  // })
 
   return {
     createdRoleCount: roles.count,
