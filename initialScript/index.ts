@@ -20,7 +20,7 @@ const main = async () => {
     create: {
       id: generateUuid(),
       name: 'Basic',
-      price: 100,
+      price: 5000,
       status: 'active',
     },
   })
@@ -31,7 +31,7 @@ const main = async () => {
     create: {
       id: generateUuid(),
       name: 'Pro',
-      price: 300,
+      price: 10000,
       status: 'active',
     },
   })
@@ -302,29 +302,6 @@ const main = async () => {
       task_id: task2.id,
       user_id: employee.id,
       assigned_at: new Date(),
-    },
-  })
-
-  // 9. Order + Payment
-  const order = await prisma.order.create({
-    data: {
-      id: generateUuid(),
-      workspace_id: workspace.id,
-      package_id: pkgPro.id,
-      order_date: new Date(),
-      total_amount: 300,
-      status: 'confirmed',
-    },
-  })
-
-  await prisma.payment.create({
-    data: {
-      id: generateUuid(),
-      order_id: order.id,
-      payment_date: new Date(),
-      amount: 300,
-      payment_method: 'momo',
-      status: 'success',
     },
   })
 

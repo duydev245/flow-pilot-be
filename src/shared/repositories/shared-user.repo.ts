@@ -28,6 +28,7 @@ export class SharedUserRepository {
         return this.prismaService.user.findFirst({
             where: {
                 ...where,
+                status: 'active',
             },
             include: {
                 role: true,

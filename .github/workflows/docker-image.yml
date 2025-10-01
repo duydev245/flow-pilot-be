@@ -32,10 +32,10 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: Pull image from Docker Hub
-        run: docker pull duyadmindocker/flow-pilot-be:latest
+        run: sudo docker pull duyadmindocker/flow-pilot-be:latest
 
       - name: Delete old container if exists
-        run: docker rm -f flow-pilot-be-container || true
+        run: sudo docker rm -f flow-pilot-be-container || true
 
       - name: Create env file and run container
         run: |
@@ -52,20 +52,21 @@ jobs:
           S3_ACCESS_KEY=${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
           S3_BUCKET_NAME=${{ secrets.S3_BUCKET_NAME }}
+          PAYMENT_API_KEY=${{ secrets.PAYMENT_API_KEY }}
           EOF
 
           echo "Removing old container..."
-          docker rm -f flow-pilot-be-container || true
+          sudo docker rm -f flow-pilot-be-container || true
 
           echo "Starting new container..."
-          docker container run -dp 4000:8080 --name flow-pilot-be-container --env-file container.env duyadmindocker/flow-pilot-be:latest
+          sudo docker container run -dp 4000:8080 --name flow-pilot-be-container --env-file container.env duyadmindocker/flow-pilot-be:latest
 
           echo "Cleaning up env file..."
           rm container.env
 
           echo "Checking container status..."
-          docker ps | grep flow-pilot-be-container
+          sudo docker ps | grep flow-pilot-be-container
 
           echo "Container logs:"
           sleep 3
-          docker logs --tail 20 flow-pilot-be-container
+          sudo docker logs --tail 20 flow-pilot-be-container

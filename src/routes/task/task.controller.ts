@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Put, UseGuards, Delete } from '@nestjs/common'
-import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -20,7 +20,6 @@ import { TaskService } from './task.service'
 
 @Controller('task')
 @ApiTags('Task Module')
-@ApiSecurity('apiKey')
 @ApiBearerAuth('access-token')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
