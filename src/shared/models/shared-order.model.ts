@@ -3,6 +3,7 @@ import { OrderStatus } from "../constants/order.constant";
 
 export const OrderSchema = z.object({
     id: z.uuid(),
+    email: z.email(),
     workspace_id: z.uuid().optional().nullable(),
     package_id: z.uuid(),
     total_amount: z.number(),

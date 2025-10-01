@@ -5,6 +5,7 @@ import { ConsultationRequestRepository } from './consultation-request.repo';
 import { PackageRepository } from '../package/package.repo';
 
 @Module({
+  exports: [ConsultationRequestRepository],
   controllers: [ConsultationRequestController],
   providers: [ConsultationRequestService, ConsultationRequestRepository, PackageRepository],
 })

@@ -6,14 +6,14 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { Roles } from 'src/shared/decorators/roles.decorator'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
-import { ApiBearerAuth, ApiSecurity } from '@nestjs/swagger'
+import { ApiBearerAuth } from '@nestjs/swagger'
+import { PaymentApiKeyGuard } from 'src/shared/guards/payment-api-key.guard'
 
 @Controller('payment')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) { }
 
   @Get()
-  @ApiSecurity('apiKey')
   @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
@@ -23,7 +23,6 @@ export class PaymentController {
   }
 
   @Get(':id')
-  @ApiSecurity('apiKey')
   @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
@@ -33,7 +32,6 @@ export class PaymentController {
   }
 
   @Post('create')
-  @ApiSecurity('apiKey')
   @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
@@ -43,7 +41,6 @@ export class PaymentController {
   }
 
   @Put(':id')
-  @ApiSecurity('apiKey')
   @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
@@ -53,13 +50,13 @@ export class PaymentController {
   }
 
   @Post('receive')
+  @UseGuards(PaymentApiKeyGuard)
   @ZodSerializerDto(MessageResDTO)
   receive(@Body() body: WebhookPaymentBodyDTO) {
     return this.paymentService.receive(body)
   }
 
   @Delete('delete/:id')
-  @ApiSecurity('apiKey')
   @ApiBearerAuth('access-token')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)

@@ -31,7 +31,7 @@ export class PaymentRepository {
 		})
 	}
 
-	async create(data: Pick<PaymentType, 'email' | 'order_id' | 'payment_date' | 'amount' | 'status'>) {
+	async create(data: Pick<PaymentType, 'order_id' | 'payment_date' | 'amount' | 'status'>) {
 		return await this.prismaService.payment.create({ data })
 	}
 
@@ -49,80 +49,10 @@ export class PaymentRepository {
 		return await this.prismaService.payment.delete({ where: { id } })
 	}
 
-	async receive(body: WebhookPaymentBodyType) {
-		// 1. Thêm thông tin giao dịch vào DB
-		let amount_in = 0
-		let amount_out = 0
-		if (body.transferType === 'in') {
-			amount_in = body.transferAmount
-		} else if (body.transferType === 'out') {
-			amount_out = body.transferAmount
-		}
-
-		await this.prismaService.paymentTransaction.create({
-			data: {
-				id: body.id,
-				gateway: body.gateway,
-				transaction_date: parse(body.transactionDate, 'yyyy-MM-dd HH:mm:ss', new Date()),
-				account_number: body.accountNumber,
-				sub_account: body.subAccount,
-				amount_in,
-				amount_out,
-				accumulated: body.accumulated,
-				code: body.code,
-				transaction_content: body.content,
-				reference_number: body.referenceCode,
-				body: body.description,
-			}
-		})
-
-		// 2. Kiểm tra nội dung chuyển khoản và tổng số tiền có khớp hay không
-		const paymentId = body.code
-			? Number(body.code.split(PREFIX_PAYMENT_CODE)[1])
-			: Number(body.content?.split(PREFIX_PAYMENT_CODE)[1])
-
-		if (isNaN(paymentId)) {
-			throw PaymentIdNotFound;
-		}
-
-		const existingPayment = await this.prismaService.payment.findUnique({
-			where: {
-				id: paymentId
-			},
-			include: {
-				order: true
-			}
-		})
-
-		if (!existingPayment) {
-			throw PaymentNotFound;
-		}
-
-		const { order } = existingPayment;
-		if (order.total_amount !== body.transferAmount) {
-			throw PaymentAmountMismatch;
-		}
-
-		await Promise.all([
-			this.prismaService.payment.update({
-				where: { id: paymentId },
-				data: {
-					status: PaymentStatus.success,
-				}
-			}),
-			this.prismaService.order.update({
-				where: { id: order.id },
-				data: {
-					status: OrderStatus.paid
-				}
-			})
-		])
-	}
-
 	async createTransaction(body: WebhookPaymentBodyType): Promise<PaymentTransactionType> {
 		let amount_in = 0
 		let amount_out = 0
-		
+
 		if (body.transferType === 'in') {
 			amount_in = body.transferAmount
 		} else if (body.transferType === 'out') {

@@ -5,13 +5,12 @@ import { GetUserId } from 'src/shared/decorators/active-user.decorator';
 import { RoleName } from 'src/shared/constants/role.constant';
 import { SharedNotificationService } from 'src/shared/services/shared-notification.service';
 import { NotificationCreateDto, NotificationUpdateDto } from './notification.dto';
-import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { MessageResDTO } from 'src/shared/dtos/response.dto';
 
 @Controller('notification')
 @ApiTags('Notification')
-@ApiSecurity('apiKey')
 @ApiBearerAuth('access-token')
 @UseGuards(AuthRoleGuard)
 @ZodSerializerDto(MessageResDTO)

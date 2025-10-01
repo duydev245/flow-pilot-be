@@ -6,8 +6,6 @@ import { SuccessResponse } from 'src/shared/sucess'
 import { PaymentNotFound, OrderNotFound, PaymentTransactionExists, PaymentIdNotFound, PaymentAmountMismatch } from './payment.error'
 import { PaymentStatus, PREFIX_PAYMENT_CODE } from 'src/shared/constants/payment.constant'
 import { EmailService } from 'src/shared/services/email.service'
-import { ConsultationRequestRepository } from '../consultation-request/consultation-request.repo'
-import { UserNotFoundException } from 'src/shared/error'
 import { OrderStatus } from 'src/shared/constants/order.constant'
 import { format } from 'date-fns'
 
@@ -18,7 +16,6 @@ export class PaymentService {
 	constructor(
 		private readonly paymentRepository: PaymentRepository,
 		private readonly sharedOrderRepository: SharedOrderRepository,
-		private readonly consultationRequestRepository: ConsultationRequestRepository,
 		private readonly emailService: EmailService,
 	) { }
 
@@ -45,20 +42,14 @@ export class PaymentService {
 
 	async create(body: CreatePaymentRequestType) {
 		try {
-			const { order_id, email } = body
+			const { order_id } = body
 
-			const isOrderExist = await this.sharedOrderRepository.findUniqueWithPackage({ id: order_id })
-			if (!isOrderExist) return OrderNotFound
+			const orderExist = await this.sharedOrderRepository.findUniqueWithPackage({ id: order_id })
+			if (!orderExist) return OrderNotFound
 
-			const customer = await this.consultationRequestRepository.findUniqueByMail(email);
-			if (!customer) {
-				throw UserNotFoundException;
-			}
-
-			const amount = isOrderExist.total_amount;
+			const amount = orderExist.total_amount;
 
 			const result = await this.paymentRepository.create({
-				email: customer.email,
 				order_id,
 				payment_date: new Date(),
 				amount,
@@ -67,9 +58,9 @@ export class PaymentService {
 
 			// Send email to user
 			await this.emailService.sendPaymentRequestEmail({
-				email: customer.email,
-				package_name: isOrderExist.package.name,
-				order_id: isOrderExist.id,
+				email: orderExist.email,
+				package_name: orderExist.package.name,
+				order_id: orderExist.id,
 				payment_id: result.id.toString(),
 				amount: amount.toLocaleString(),
 			})
@@ -148,14 +139,12 @@ export class PaymentService {
 
 			// 3. Cập nhật trạng thái payment và order
 			await Promise.all([
-				this.paymentRepository.update(paymentId, {
-					status: PaymentStatus.success,
-				}),
+				this.paymentRepository.update(paymentId, { status: PaymentStatus.success }),
 				this.sharedOrderRepository.update({ id: order.id }, { status: OrderStatus.paid }),
 				this.emailService.sendPaymentSuccessEmail({
-					email: existingPayment.email,
+					email: order.email,
 					package_name: order.package.name,
-					amount: order.total_amount.toString(),
+					amount: order.total_amount.toLocaleString(),
 					order_id: order.id,
 					paid_at: format(new Date(transaction.transaction_date), 'dd/MM/yyyy HH:mm')
 				})

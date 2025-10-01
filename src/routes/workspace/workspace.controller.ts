@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -10,7 +10,6 @@ import { WorkspaceService } from './workspace.service'
 
 @Controller('workspace')
 @ApiTags('Workspace Module')
-@ApiSecurity('apiKey')
 @ApiBearerAuth('access-token')
 export class WorkspaceController {
   constructor(private readonly workspaceService: WorkspaceService) {}

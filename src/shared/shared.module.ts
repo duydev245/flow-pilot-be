@@ -15,6 +15,7 @@ import { SharedNotificationService } from './services/shared-notification.servic
 import { SharedNotificationRepository } from './repositories/shared-notification.repo'
 import { S3StorageService } from './services/s3-storage.service'
 import { SharedOrderRepository } from './repositories/shared-order.repo'
+import { PaymentApiKeyGuard } from './guards/payment-api-key.guard'
 
 const sharedServices = [
   PrismaService,
@@ -37,6 +38,7 @@ const sharedServices = [
     ...sharedServices,
     AccessTokenGuard,
     APIKeyGuard,
+    PaymentApiKeyGuard,
     {
       provide: APP_GUARD,
       useClass: AuthenticationGuard,
