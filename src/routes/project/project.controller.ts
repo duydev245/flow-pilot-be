@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
-import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import {
   ProjecAdmintUpdateDto,
@@ -17,7 +17,6 @@ import { ProjectService } from './project.service'
 
 @Controller('project')
 @ApiTags('Project Module')
-@ApiSecurity('apiKey')
 @ApiBearerAuth('access-token')
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
