@@ -5,13 +5,12 @@ import { Roles } from 'src/shared/decorators/roles.decorator';
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard';
 import { GetUserId } from 'src/shared/decorators/active-user.decorator';
 import { RoleName } from 'src/shared/constants/role.constant';
-import { ApiBearerAuth, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { MessageResDTO } from 'src/shared/dtos/response.dto';
 import { ZodSerializerDto } from 'nestjs-zod';
 
 @Controller('focus-log')
 @ApiTags('Focus Log Module')
-@ApiSecurity('apiKey')
 @ApiBearerAuth('access-token')
 @UseGuards(AuthRoleGuard)
 @ZodSerializerDto(MessageResDTO)

@@ -5,6 +5,9 @@ import { CreateOrderType, UpdateOrderType } from './order.model'
 import { SuccessResponse } from 'src/shared/sucess'
 import { OrderNotFound, PackageNotFound, WorkspaceNotFound } from './order.error'
 import { SharedWorkspaceRepository } from 'src/shared/repositories/shared-workspace.repo'
+import { PaymentService } from '../payment/payment.service'
+import { ConsultationRequestRepository } from '../consultation-request/consultation-request.repo'
+import { ConsultationRequestNotFound } from '../consultation-request/consultation-request.error'
 
 @Injectable()
 export class OrderService {
@@ -14,7 +17,9 @@ export class OrderService {
 		private readonly orderRepository: OrderRepository,
 		private readonly packageRepository: PackageRepository,
 		private readonly sharedWorkspaceRepository: SharedWorkspaceRepository,
-	) {}
+		private readonly consultationRequestRepository: ConsultationRequestRepository,
+		private readonly paymentService: PaymentService,
+	) { }
 
 	async getAll({ page, limit }: { page: number; limit: number }) {
 		try {
@@ -43,17 +48,28 @@ export class OrderService {
 			if (!isPackageExist) return PackageNotFound
 
 			if (body.workspace_id) {
-				const isWorkspaceExist = await this.sharedWorkspaceRepository.findUnique({id: body.workspace_id})
+				const isWorkspaceExist = await this.sharedWorkspaceRepository.findUnique({ id: body.workspace_id })
 				if (!isWorkspaceExist) return WorkspaceNotFound
 			}
 
-			const result = await this.orderRepository.create({
-				workspace_id: body.workspace_id,
-				package_id: body.package_id,
-				total_amount: isPackageExist.price,
-			})
-			
-			return SuccessResponse('Create order successfully', result)
+			const customer = await this.consultationRequestRepository.findUniqueByMail(body.email);
+			if (!customer) {
+				throw ConsultationRequestNotFound;
+			}
+
+			// Close the consultation request and create order
+			const [, orderResult] = await Promise.all([
+				this.consultationRequestRepository.update(customer.id, { status: 'closed' }),
+				this.orderRepository.create({
+					email: body.email,
+					workspace_id: body.workspace_id,
+					package_id: body.package_id,
+					total_amount: isPackageExist.price,
+				})
+			]);
+
+			// Create payment for the order 
+			return await this.paymentService.create({ order_id: orderResult.id });
 		} catch (error) {
 			this.logger.error(error.message)
 			throw error
@@ -67,7 +83,7 @@ export class OrderService {
 				if (!isPackageExist) return PackageNotFound
 			}
 			if (body.workspace_id) {
-				const isWorkspaceExist = await this.sharedWorkspaceRepository.findUnique({id: body.workspace_id})
+				const isWorkspaceExist = await this.sharedWorkspaceRepository.findUnique({ id: body.workspace_id })
 				if (!isWorkspaceExist) return WorkspaceNotFound
 			}
 			const existing = await this.orderRepository.getById(id)

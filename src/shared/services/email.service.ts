@@ -25,7 +25,7 @@ export class EmailService {
     async sendOTP(payload: { email: string, code: string }) {
         const subject = '[FLOW-PILOT] OTP CODE FOR VERIFICATION';
         // Replace placeholders in the template with actual values
-        const htmlContent = template.replaceAll('{{subject}}', subject).replace('{{code}}', payload.code);
+        const htmlContent = template.replaceAll('{{subject}}', subject).replaceAll('{{code}}', payload.code);
 
         return await this.resend.emails.send({
             from: 'Flow Pilot <no-reply@flowpilot.io.vn>',
@@ -40,9 +40,9 @@ export class EmailService {
         // Replace placeholders in the template with actual values
         const htmlContent = newAccountTemplate
             .replaceAll('{{subject}}', subject)
-            .replace('{{name}}', payload.name)
-            .replace('{{email}}', payload.email)
-            .replace('{{password}}', payload.password);
+            .replaceAll('{{name}}', payload.name)
+            .replaceAll('{{email}}', payload.email)
+            .replaceAll('{{password}}', payload.password);
 
         return await this.resend.emails.send({
             from: 'Flow Pilot <no-reply@flowpilot.io.vn>',
@@ -139,9 +139,9 @@ export class EmailService {
         // Replace placeholders in the template with actual values
         const htmlContent = paymentFailureTemplate
             .replaceAll('{{subject}}', subject)
-            .replace('{{order_id}}', payload.order_id)
-            .replace('{{package_name}}', payload.package_name)
-            .replace('{{amount}}', payload.amount);
+            .replaceAll('{{order_id}}', payload.order_id)
+            .replaceAll('{{package_name}}', payload.package_name)
+            .replaceAll('{{amount}}', payload.amount);
 
         return await this.resend.emails.send({
             from: 'Flow Pilot <no-reply@flowpilot.io.vn>',

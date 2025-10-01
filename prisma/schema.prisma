@@ -89,6 +89,7 @@ enum ConsultationStatus {
 model Order {
   id           String      @id @default(uuid()) @db.Uuid
   workspace_id String?     @db.Uuid
+  email        String      @db.VarChar(500)
   package_id   String      @db.Uuid
   total_amount Float
   created_at   DateTime    @default(now())
@@ -110,7 +111,6 @@ enum OrderStatus {
 
 model Payment {
   id           Int           @id @default(autoincrement())
-  email        String        @db.VarChar(500)
   order_id     String        @db.Uuid
   payment_date DateTime
   amount       Float

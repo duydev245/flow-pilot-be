@@ -26,6 +26,7 @@ export const ForbiddenResourceException = new ForbiddenException({ code: 'FORBID
 
 export const InvalidAPIKeyException = new UnauthorizedException({ code: 'INVALID_API_KEY', message: 'Invalid API Key' })
 
+export const PaymentApiKeyRequiredException = new BadRequestException({ code: 'PAYMENT_API_KEY_IS_REQUIRED', message: 'Payment API Key is required' })
 
 export const NotificationErrors = {
     NotFound: {

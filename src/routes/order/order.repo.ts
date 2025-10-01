@@ -25,7 +25,7 @@ export class OrderRepository {
         return await this.prismaService.order.findUnique({ where: { id } })
     }
 
-    async create(body: Pick<OrderSchemaType, 'workspace_id' | 'package_id' | 'total_amount'>) {
+    async create(body: Pick<OrderSchemaType, 'email' | 'workspace_id' | 'package_id' | 'total_amount'>) {
         return await this.prismaService.order.create({ data: body })
     }
 

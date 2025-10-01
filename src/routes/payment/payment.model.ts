@@ -3,7 +3,6 @@ import z from "zod";
 
 export const PaymentSchema = z.object({
 	id: z.number(),
-	email: z.email(),
 	order_id: z.uuid(),
 	payment_date: z.date(),
 	amount: z.number(),
@@ -13,12 +12,11 @@ export const PaymentSchema = z.object({
 })
 
 export const CreatePaymentRequestSchema = PaymentSchema
-	.pick({ order_id: true, email: true })
+	.pick({ order_id: true })
 	.strict()
 
 export const CreatePaymentSchema = z.object({
 	order_id: z.uuid(),
-	email: z.email(),
 	payment_date: z.date(),
 	amount: z.number(),
 	status: z.enum([PaymentStatus.pending, PaymentStatus.success, PaymentStatus.failed, PaymentStatus.refunded]),
