@@ -41,12 +41,12 @@ export class PerformanceController {
   async getProjectAIAnalysis(@Query('projectId') projectId: string) {
     return await this.performanceService.getProjectAIAnalysis({ projectId })
   }
-  @Post('evaluate')
+  @Get('evaluate')
   @Roles([RoleName.Employee, RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  async evaluatePerformance(@GetUserId() userId: string, @Body() dto: PerformanceEvaluationRequestDto) {
-    return await this.performanceService.evaluatePerformanceByAI(userId, { ...dto, userId })
+  async evaluatePerformance(@GetUserId() userId: string) {
+    return await this.performanceService.evaluatePerformanceByAI(userId, {})
   }
 
   @Get('project-members')
