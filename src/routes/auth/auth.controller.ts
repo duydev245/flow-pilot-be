@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Put, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ChangePasswordBodyDTO, ForgotPasswordBodyDTO, LoginBodyDTO, LoginResDTO, LogoutBodyDTO, RefreshTokenBodyDTO, RefreshTokenResDTO, SendOTPBodyDTO } from './auth.dto';
 import { ZodSerializerDto } from 'nestjs-zod';

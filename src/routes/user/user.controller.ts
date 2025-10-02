@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { ActiveUserBodyDTO, UserCreateBodyDto, UserCreateByAdminBodyDto, UserUpdateBodyDto, UserUpdateByAdminBodyDto, UserUpdateProfileBodyDto } from 'src/routes/user/user.dto'
@@ -9,6 +9,21 @@ import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
 import { ValidUserWorkspaceGuard } from 'src/shared/guards/valid-user-workspace.guard'
 import { UserService } from './user.service'
+import { FileInterceptor } from '@nestjs/platform-express'
+import * as multer from 'multer'
+import path from 'path'
+import { InvalidFileExtensionError } from 'src/shared/filters/multer-exception.filter'
+
+const uploadOptions = {
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+    const ext = path.extname(file.originalname || '').toLowerCase()
+    const allowed = ['.png', '.jpg', '.jpeg']
+    if (!allowed.includes(ext)) return cb(new InvalidFileExtensionError('INVALID_FILE_EXTENSION') as any, false)
+    cb(null, true)
+  },
+}
 
 @Controller('user')
 @ApiTags('User Module')
@@ -28,12 +43,14 @@ export class UserController {
   @Put('/update-profile')
   @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.ProjectManager, RoleName.Employee])
   @UseGuards(AuthRoleGuard)
+  @UseInterceptors(FileInterceptor('avatar', uploadOptions))
   @ZodSerializerDto(MessageResDTO)
   updateProfile(
     @GetUserId() userId: string,
+    @UploadedFile() avatar: Express.Multer.File,
     @Body() body: UserUpdateProfileBodyDto,
   ) {
-    return this.userService.updateProfile(userId, body)
+    return this.userService.updateProfile(avatar, userId, body)
   }
 
   // Super admin routes
