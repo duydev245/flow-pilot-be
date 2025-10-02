@@ -46,13 +46,13 @@ export class FileService {
         if (!ALLOWED_EXT.includes(ext)) throw InvalidFile
     }
 
-    async uploadForTask(params: { user_id: string; task_id: string; file: Express.Multer.File }) {
-        const { user_id, task_id, file } = params
+    async uploadForTask(body: { user_id: string; task_id: string; file: Express.Multer.File }) {
+        const { user_id, task_id, file } = body
         this.validateFile(file)
         let file_key: string
         let file_url: string
         try {
-            const res = await this.s3.uploadFile(file)
+            const res = await this.s3.uploadFile(file, 'tasks')
             file_key = res.key
             file_url = res.url
         } catch (e) {
@@ -71,13 +71,13 @@ export class FileService {
         return SuccessResponse(`File "${created.file_name}" uploaded successfully`)
     }
 
-    async uploadForUser(params: { user_id: string; file: Express.Multer.File }) {
-        const { user_id, file } = params
+    async uploadForUser(body: { user_id: string; file: Express.Multer.File }) {
+        const { user_id, file } = body
         this.validateFile(file)
         let file_key: string
         let file_url: string
         try {
-            const res = await this.s3.uploadFile(file)
+            const res = await this.s3.uploadFile(file, 'users')
             file_key = res.key
             file_url = res.url
         } catch (e) {

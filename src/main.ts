@@ -17,7 +17,6 @@ async function bootstrap() {
     .setTitle('Flow Pilot')
     .setDescription('The Flow Pilot. API description')
     .setVersion('1.0')
-    .addApiKey({ type: 'apiKey', name: 'x-api-key', in: 'header' }, 'apiKey')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
     .build();
 
