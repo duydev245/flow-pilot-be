@@ -405,4 +405,357 @@ export class PerformanceService {
       },
     }
   }
+
+  // New performance metrics methods
+
+  /**
+   * Calculate task completion rate for a user
+   * Formula: completed tasks / total tasks assigned to user
+   */
+  async getTaskCompletionRate(userId: string, params: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = params
+    
+    // Calculate date range for current period
+    const { start: currentStart, end: currentEnd } = this.calculatePeriodDates(period, fromDate, toDate)
+    
+    // Get tasks for current period
+    const tasks = await this.performanceRepository.getUserTasks(userId, currentStart, currentEnd)
+    const completedTasks = tasks.filter(t => t.status === 'completed').length
+    const totalTasks = tasks.length
+    
+    const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
+    
+    // Get previous period for comparison
+    const { start: prevStart, end: prevEnd } = this.calculatePreviousPeriodDates(period, currentStart)
+    const prevTasks = await this.performanceRepository.getUserTasks(userId, prevStart, prevEnd)
+    const prevCompletedTasks = prevTasks.filter(t => t.status === 'completed').length
+    const prevTotalTasks = prevTasks.length
+    const previousPeriodRate = prevTotalTasks > 0 ? (prevCompletedTasks / prevTotalTasks) * 100 : 0
+    
+    const changePercentage = previousPeriodRate > 0 ? 
+      ((completionRate - previousPeriodRate) / previousPeriodRate) * 100 : 0
+
+    return SuccessResponse('Task completion rate fetched successfully', {
+      userId,
+      period: `${currentStart.toISOString().split('T')[0]} to ${currentEnd.toISOString().split('T')[0]}`,
+      totalTasks,
+      completedTasks,
+      completionRate: Math.round(completionRate * 100) / 100,
+      previousPeriodRate: Math.round(previousPeriodRate * 100) / 100,
+      changePercentage: Math.round(changePercentage * 100) / 100,
+    })
+  }
+
+  /**
+   * Calculate deadline adherence rate 
+   * Formula: tasks completed on time / total completed tasks
+   */
+  async getDeadlineAdherence(userId: string, params: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = params
+    
+    const { start: currentStart, end: currentEnd } = this.calculatePeriodDates(period, fromDate, toDate)
+    
+    // Get completed tasks for the period
+    const completedTasks = await this.performanceRepository.getUserCompletedTasks(userId, currentStart, currentEnd)
+    
+    const totalTasks = completedTasks.length
+    const onTimeTasks = completedTasks.filter(task => {
+      if (!task.completed_at || !task.due_at) return false
+      return new Date(task.completed_at) <= new Date(task.due_at)
+    }).length
+    
+    const adherenceRate = totalTasks > 0 ? (onTimeTasks / totalTasks) * 100 : 0
+    
+    // Calculate average delay days for overdue tasks
+    const overdueTasks = completedTasks.filter(task => {
+      if (!task.completed_at || !task.due_at) return false
+      return new Date(task.completed_at) > new Date(task.due_at)
+    })
+    
+    const totalDelayDays = overdueTasks.reduce((sum, task) => {
+      if (!task.completed_at || !task.due_at) return sum
+      const delayMs = new Date(task.completed_at).getTime() - new Date(task.due_at).getTime()
+      return sum + (delayMs / (1000 * 60 * 60 * 24)) // Convert to days
+    }, 0)
+    
+    const averageDelayDays = overdueTasks.length > 0 ? totalDelayDays / overdueTasks.length : 0
+    
+    // Get previous period for comparison
+    const { start: prevStart, end: prevEnd } = this.calculatePreviousPeriodDates(period, currentStart)
+    const prevCompletedTasks = await this.performanceRepository.getUserCompletedTasks(userId, prevStart, prevEnd)
+    const prevTotalTasks = prevCompletedTasks.length
+    const prevOnTimeTasks = prevCompletedTasks.filter(task => {
+      if (!task.completed_at || !task.due_at) return false
+      return new Date(task.completed_at) <= new Date(task.due_at)
+    }).length
+    const previousPeriodRate = prevTotalTasks > 0 ? (prevOnTimeTasks / prevTotalTasks) * 100 : 0
+
+    return SuccessResponse('Deadline adherence fetched successfully', {
+      userId,
+      period: `${currentStart.toISOString().split('T')[0]} to ${currentEnd.toISOString().split('T')[0]}`,
+      totalTasks,
+      onTimeTasks,
+      adherenceRate: Math.round(adherenceRate * 100) / 100,
+      averageDelayDays: Math.round(averageDelayDays * 100) / 100,
+      previousPeriodRate: Math.round(previousPeriodRate * 100) / 100,
+    })
+  }
+
+  /**
+   * Calculate work hours compliance using focus logs as proxy
+   * Formula: hours worked in standard schedule / total hours worked
+   */
+  async getWorkHoursCompliance(userId: string, params: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = params
+    
+    const { start: currentStart, end: currentEnd } = this.calculatePeriodDates(period, fromDate, toDate)
+    
+    // Get focus logs for the period (using as proxy for working hours)
+    const focusLogs = await this.performanceRepository.getUserWorkingHours(userId, currentStart, currentEnd)
+    
+    const totalWorkingHours = focusLogs.reduce((sum, log) => sum + (log.focused_minutes / 60), 0)
+    
+    // Assume standard working hours: 8 hours/day, 5 days/week
+    const workingDays = this.calculateWorkingDays(currentStart, currentEnd)
+    const standardHours = workingDays * 8
+    
+    const complianceRate = standardHours > 0 ? Math.min((totalWorkingHours / standardHours) * 100, 100) : 0
+    const overtimeHours = Math.max(totalWorkingHours - standardHours, 0)
+    
+    // Get previous period for comparison
+    const { start: prevStart, end: prevEnd } = this.calculatePreviousPeriodDates(period, currentStart)
+    const prevFocusLogs = await this.performanceRepository.getUserWorkingHours(userId, prevStart, prevEnd)
+    const prevTotalWorkingHours = prevFocusLogs.reduce((sum, log) => sum + (log.focused_minutes / 60), 0)
+    const prevWorkingDays = this.calculateWorkingDays(prevStart, prevEnd)
+    const prevStandardHours = prevWorkingDays * 8
+    const previousPeriodRate = prevStandardHours > 0 ? Math.min((prevTotalWorkingHours / prevStandardHours) * 100, 100) : 0
+
+    return SuccessResponse('Work hours compliance fetched successfully', {
+      userId,
+      period: `${currentStart.toISOString().split('T')[0]} to ${currentEnd.toISOString().split('T')[0]}`,
+      totalWorkingHours: Math.round(totalWorkingHours * 100) / 100,
+      standardHours: Math.round(standardHours * 100) / 100,
+      complianceRate: Math.round(complianceRate * 100) / 100,
+      overtimeHours: Math.round(overtimeHours * 100) / 100,
+      previousPeriodRate: Math.round(previousPeriodRate * 100) / 100,
+    })
+  }
+
+  /**
+   * Calculate average time to completion
+   * Formula: average time from task start to completion
+   */
+  async getTimeToCompletion(userId: string, params: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = params
+    
+    const { start: currentStart, end: currentEnd } = this.calculatePeriodDates(period, fromDate, toDate)
+    
+    // Get completed tasks for the period
+    const completedTasks = await this.performanceRepository.getUserCompletedTasks(userId, currentStart, currentEnd)
+    
+    const validTasks = completedTasks.filter(task => task.start_at && task.completed_at)
+    const completionTimes = validTasks.map(task => {
+      const startTime = new Date(task.start_at).getTime()
+      const completedTime = new Date(task.completed_at!).getTime()
+      return (completedTime - startTime) / (1000 * 60 * 60) // Convert to hours
+    })
+    
+    const averageCompletionTimeHours = completionTimes.length > 0 ? 
+      completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length : 0
+    
+    // Calculate additional metrics
+    const medianCompletionTimeHours = completionTimes.length > 0 ? 
+      this.calculateMedian(completionTimes) : 0
+    const fastestTaskHours = completionTimes.length > 0 ? Math.min(...completionTimes) : 0
+    const slowestTaskHours = completionTimes.length > 0 ? Math.max(...completionTimes) : 0
+    
+    // Get previous period for comparison
+    const { start: prevStart, end: prevEnd } = this.calculatePreviousPeriodDates(period, currentStart)
+    const prevCompletedTasks = await this.performanceRepository.getUserCompletedTasks(userId, prevStart, prevEnd)
+    const prevValidTasks = prevCompletedTasks.filter(task => task.start_at && task.completed_at)
+    const prevCompletionTimes = prevValidTasks.map(task => {
+      const startTime = new Date(task.start_at).getTime()
+      const completedTime = new Date(task.completed_at!).getTime()
+      return (completedTime - startTime) / (1000 * 60 * 60)
+    })
+    const previousPeriodAverage = prevCompletionTimes.length > 0 ? 
+      prevCompletionTimes.reduce((sum, time) => sum + time, 0) / prevCompletionTimes.length : 0
+
+    return SuccessResponse('Time to completion fetched successfully', {
+      userId,
+      period: `${currentStart.toISOString().split('T')[0]} to ${currentEnd.toISOString().split('T')[0]}`,
+      completedTasks: validTasks.length,
+      averageCompletionTimeHours: Math.round(averageCompletionTimeHours * 100) / 100,
+      medianCompletionTimeHours: Math.round(medianCompletionTimeHours * 100) / 100,
+      fastestTaskHours: Math.round(fastestTaskHours * 100) / 100,
+      slowestTaskHours: Math.round(slowestTaskHours * 100) / 100,
+      previousPeriodAverage: Math.round(previousPeriodAverage * 100) / 100,
+    })
+  }
+
+  /**
+   * Calculate throughput (deliverables count)
+   * Formula: total completed tasks in period
+   */
+  async getThroughput(userId: string, params: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = params
+    
+    const { start: currentStart, end: currentEnd } = this.calculatePeriodDates(period, fromDate, toDate)
+    
+    // Get completed tasks for the period
+    const completedTasks = await this.performanceRepository.getUserCompletedTasks(userId, currentStart, currentEnd)
+    
+    const totalCompletedTasks = completedTasks.length
+    const deliverables = totalCompletedTasks // For now, assume each completed task is a deliverable
+    
+    // Calculate rates
+    const periodDays = Math.ceil((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24))
+    const tasksPerDay = periodDays > 0 ? totalCompletedTasks / periodDays : 0
+    const tasksPerWeek = tasksPerDay * 7
+    
+    // Get previous period for comparison
+    const { start: prevStart, end: prevEnd } = this.calculatePreviousPeriodDates(period, currentStart)
+    const prevCompletedTasks = await this.performanceRepository.getUserCompletedTasks(userId, prevStart, prevEnd)
+    const previousPeriodThroughput = prevCompletedTasks.length
+    
+    const changePercentage = previousPeriodThroughput > 0 ? 
+      ((totalCompletedTasks - previousPeriodThroughput) / previousPeriodThroughput) * 100 : 0
+
+    return SuccessResponse('Throughput fetched successfully', {
+      userId,
+      period: `${currentStart.toISOString().split('T')[0]} to ${currentEnd.toISOString().split('T')[0]}`,
+      completedTasks: totalCompletedTasks,
+      deliverables,
+      tasksPerDay: Math.round(tasksPerDay * 100) / 100,
+      tasksPerWeek: Math.round(tasksPerWeek * 100) / 100,
+      previousPeriodThroughput,
+      changePercentage: Math.round(changePercentage * 100) / 100,
+    })
+  }
+
+  /**
+   * Calculate error reduction rate
+   * Formula: (previous error rate - current error rate) / previous error rate
+   */
+  async getErrorReduction(userId: string, params: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = params
+    
+    const { start: currentStart, end: currentEnd } = this.calculatePeriodDates(period, fromDate, toDate)
+    const { start: prevStart, end: prevEnd } = this.calculatePreviousPeriodDates(period, currentStart)
+    
+    // Get task rejections (proxy for errors) for both periods
+    const currentRejections = await this.performanceRepository.getUserTaskRejections(userId, currentStart, currentEnd)
+    const prevRejections = await this.performanceRepository.getUserTaskRejections(userId, prevStart, prevEnd)
+    
+    // Get total tasks for both periods to calculate error rates
+    const currentTasks = await this.performanceRepository.getUserTasks(userId, currentStart, currentEnd)
+    const prevTasks = await this.performanceRepository.getUserTasks(userId, prevStart, prevEnd)
+    
+    const currentPeriodErrors = currentRejections.length
+    const previousPeriodErrors = prevRejections.length
+    const totalTasksCurrentPeriod = currentTasks.length
+    const totalTasksPreviousPeriod = prevTasks.length
+    
+    const errorRate = totalTasksCurrentPeriod > 0 ? (currentPeriodErrors / totalTasksCurrentPeriod) * 100 : 0
+    const previousErrorRate = totalTasksPreviousPeriod > 0 ? (previousPeriodErrors / totalTasksPreviousPeriod) * 100 : 0
+    
+    // Calculate reduction rate (negative means increase in errors)
+    const reductionRate = previousErrorRate > 0 ? 
+      ((previousErrorRate - errorRate) / previousErrorRate) * 100 : 0
+
+    return SuccessResponse('Error reduction fetched successfully', {
+      userId,
+      currentPeriod: `${currentStart.toISOString().split('T')[0]} to ${currentEnd.toISOString().split('T')[0]}`,
+      previousPeriod: `${prevStart.toISOString().split('T')[0]} to ${prevEnd.toISOString().split('T')[0]}`,
+      currentPeriodErrors,
+      previousPeriodErrors,
+      errorRate: Math.round(errorRate * 100) / 100,
+      previousErrorRate: Math.round(previousErrorRate * 100) / 100,
+      reductionRate: Math.round(reductionRate * 100) / 100,
+      totalTasksCurrentPeriod,
+      totalTasksPreviousPeriod,
+    })
+  }
+
+  // Helper methods
+
+  private calculatePeriodDates(period: string, fromDate?: string, toDate?: string): { start: Date; end: Date } {
+    if (fromDate && toDate) {
+      return {
+        start: new Date(fromDate),
+        end: new Date(toDate)
+      }
+    }
+
+    const now = new Date()
+    let start: Date
+    const end: Date = new Date(now)
+
+    switch (period) {
+      case 'weekly':
+        start = new Date(now)
+        start.setDate(now.getDate() - 7)
+        break
+      case 'quarterly':
+        start = new Date(now)
+        start.setMonth(now.getMonth() - 3)
+        break
+      case 'monthly':
+      default:
+        start = new Date(now)
+        start.setMonth(now.getMonth() - 1)
+        break
+    }
+
+    return { start, end }
+  }
+
+  private calculatePreviousPeriodDates(period: string, currentStart: Date): { start: Date; end: Date } {
+    const end = new Date(currentStart)
+    let start: Date
+
+    switch (period) {
+      case 'weekly':
+        start = new Date(currentStart)
+        start.setDate(currentStart.getDate() - 7)
+        break
+      case 'quarterly':
+        start = new Date(currentStart)
+        start.setMonth(currentStart.getMonth() - 3)
+        break
+      case 'monthly':
+      default:
+        start = new Date(currentStart)
+        start.setMonth(currentStart.getMonth() - 1)
+        break
+    }
+
+    return { start, end }
+  }
+
+  private calculateWorkingDays(start: Date, end: Date): number {
+    let workingDays = 0
+    const current = new Date(start)
+    
+    while (current <= end) {
+      const dayOfWeek = current.getDay()
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Exclude weekends
+        workingDays++
+      }
+      current.setDate(current.getDate() + 1)
+    }
+    
+    return workingDays
+  }
+
+  private calculateMedian(numbers: number[]): number {
+    const sorted = numbers.slice().sort((a, b) => a - b)
+    const middle = Math.floor(sorted.length / 2)
+    
+    if (sorted.length % 2 === 0) {
+      return (sorted[middle - 1] + sorted[middle]) / 2
+    } else {
+      return sorted[middle]
+    }
+  }
 }
