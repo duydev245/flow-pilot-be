@@ -135,4 +135,127 @@ export class PerformanceRepository {
       },
     })
   }
+
+  // New methods for performance metrics
+  
+  /**
+   * Get user tasks for task completion rate calculation
+   */
+  async getUserTasks(userId: string, fromDate?: Date, toDate?: Date) {
+    return this.prismaService.task.findMany({
+      where: {
+        assignees: {
+          some: {
+            user_id: userId,
+          },
+        },
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        assignees: true,
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get completed user tasks for throughput and time-to-completion
+   */
+  async getUserCompletedTasks(userId: string, fromDate?: Date, toDate?: Date) {
+    return this.prismaService.task.findMany({
+      where: {
+        assignees: {
+          some: {
+            user_id: userId,
+          },
+        },
+        status: 'completed',
+        completed_at: {
+          not: null,
+          ...(fromDate && { gte: fromDate }),
+          ...(toDate && { lte: toDate }),
+        },
+      },
+      include: {
+        assignees: true,
+      },
+      orderBy: { completed_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get task rejections for error tracking
+   */
+  async getUserTaskRejections(userId: string, fromDate?: Date, toDate?: Date) {
+    return this.prismaService.taskRejectionHistory.findMany({
+      where: {
+        task: {
+          assignees: {
+            some: {
+              user_id: userId,
+            },
+          },
+        },
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        task: {
+          include: {
+            assignees: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get user working hours from daily focus logs (proxy for work hours)
+   */
+  async getUserWorkingHours(userId: string, fromDate?: Date, toDate?: Date) {
+    return this.prismaService.dailyFocusLog.findMany({
+      where: {
+        user_id: userId,
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get task reviews for quality score tracking
+   */
+  async getUserTaskReviews(userId: string, fromDate?: Date, toDate?: Date) {
+    return this.prismaService.taskReview.findMany({
+      where: {
+        task_owner_id: userId,
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        task: true,
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get performance data for specific periods (for comparison)
+   */
+  async getPerformanceDataByPeriod(userId: string, fromDate: Date, toDate: Date, projectId?: string) {
+    return this.prismaService.performanceData.findMany({
+      where: {
+        user_id: userId,
+        ...(projectId && { project_id: projectId }),
+        created_at: {
+          gte: fromDate,
+          lte: toDate,
+        },
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
 }

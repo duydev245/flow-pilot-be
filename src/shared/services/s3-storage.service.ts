@@ -5,7 +5,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Readable } from 'stream';
 import envConfig from '../config';
 interface IStorageService {
-    uploadFile(file: Express.Multer.File): Promise<{ url: string, key: string }>;
+    uploadFile(file: Express.Multer.File, folder: string): Promise<{ url: string, key: string }>;
     downloadFile(key: string): Promise<Buffer>;
 }
 
@@ -25,8 +25,8 @@ export class S3StorageService implements IStorageService {
         this.bucketName = envConfig.S3_BUCKET_NAME;
     }
 
-    async uploadFile(file: Express.Multer.File): Promise<{ url: string, key: string }> {
-        const key = `${Date.now()}_${file.originalname}`;
+    async uploadFile(file: Express.Multer.File, folder: string): Promise<{ url: string, key: string }> {
+        const key = `${folder}/${Date.now()}_${file.originalname}`;
 
         const body = Readable.from(file.buffer);
 
