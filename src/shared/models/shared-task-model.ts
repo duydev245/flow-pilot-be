@@ -7,7 +7,13 @@ export const taskSchema = z.object({
   project_id: z.uuid(),
   name: z.string().min(2).max(100),
   description: z.string().max(255).optional(),
-  time_spent_in_minutes: z.number().int().nonnegative().default(0),
+  time_spent_in_minutes: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      return parseInt(val)
+    }
+    return val
+  }, z.number().nonnegative().default(0)),
+  image_url: z.string().optional().nullable(),
   start_at: z.string().optional(),
   due_at: z.string().optional(),
   end_at: z.string().optional(),

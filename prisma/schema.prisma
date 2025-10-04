@@ -387,6 +387,7 @@ model Task {
   name                  String
   description           String?
   time_spent_in_minutes Int?
+  image_url             String?
   start_at              DateTime
   due_at                DateTime?
   completed_at          DateTime?
