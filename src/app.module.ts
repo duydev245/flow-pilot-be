@@ -22,6 +22,7 @@ import { FileModule } from './routes/file/file.module';
 import { ConsultationRequestModule } from './routes/consultation-request/consultation-request.module';
 import { OrderModule } from './routes/order/order.module';
 import { PaymentModule } from './routes/payment/payment.module';
+import { DepartmentModule } from './routes/department/department.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { PaymentModule } from './routes/payment/payment.module';
     ConsultationRequestModule,
     OrderModule,
     PaymentModule,
+    DepartmentModule,
   ],
   controllers: [AppController],
   providers: [

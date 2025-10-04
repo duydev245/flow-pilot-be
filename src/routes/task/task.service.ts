@@ -1,4 +1,4 @@
-import { CreateRejectHistoryType, UpdateTaskReviewType } from './task.model'
+import { AssingUserToTaskType, CreateRejectHistoryType, UpdateTaskReviewType } from './task.model'
 import { Injectable, Logger } from '@nestjs/common'
 import { TaskRepository } from 'src/routes/task/task.repo'
 import { SuccessResponse } from 'src/shared/sucess'
@@ -11,18 +11,47 @@ import {
   UpdateTaskChecklistType,
   CreateTaskReviewType,
 } from './task.model'
-import { GetTaskFail } from 'src/routes/task/task.errors'
+import { GetTaskFail, TaskNotFound, UserNotAssignedToTask } from 'src/routes/task/task.errors'
 import { TaskPriority, TaskStatus } from '@prisma/client'
+import { InvalidFile, InvalidFileExtension, InvalidFileSize } from 'src/routes/file/file.error'
+import path from 'path'
+import { S3StorageService } from 'src/shared/services/s3-storage.service'
+import { EmailService } from 'src/shared/services/email.service'
 
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+const ALLOWED_EXT = ['.png', '.jpg', '.jpeg']
+
+function getExtension(filename: string) {
+  const ext = path.extname(filename || '').toLowerCase()
+  return ext
+}
 @Injectable()
 export class TaskService {
   private readonly logger = new Logger(TaskService.name)
 
-  constructor(private readonly taskRepository: TaskRepository) {}
+  constructor(
+    private readonly taskRepository: TaskRepository,
+    private readonly emailService: EmailService,
 
-  async updateTask(id: string, body: UpdateTaskType) {
+    private readonly s3: S3StorageService,
+  ) {}
+
+  validateFile(file: Express.Multer.File) {
+    if (!file) throw InvalidFile
+    if (file.size > MAX_FILE_SIZE) throw InvalidFileSize
+    const ext = getExtension(file.originalname)
+    console.log('ext: ', ext)
+    if (!ALLOWED_EXT.includes(ext)) throw InvalidFileExtension
+  }
+
+  async updateTask(id: string, body: UpdateTaskType, taskImage: Express.Multer.File) {
     try {
-      const result = await this.taskRepository.updateTask(id, body)
+      this.validateFile(taskImage)
+      // upload image len S3 voi folder name la tasks-images
+      let taskImageUrl = ''
+      const uploadTaskImage = await this.s3.uploadFile(taskImage, 'tasks-images')
+      taskImageUrl = uploadTaskImage.url
+      const result = await this.taskRepository.updateTask(id, { ...body, image_url: taskImageUrl })
       return SuccessResponse('Task updated successfully', result)
     } catch (error) {
       this.logger.error(error.message)
@@ -30,8 +59,14 @@ export class TaskService {
     }
   }
 
-  async updateTaskContent(id: string, body: UpdateTaskContentType) {
+  async updateTaskContent(id: string, body: UpdateTaskContentType, userId: string) {
     try {
+      // Kiểm tra xem user có quyền sửa TaskContent này không (phải là người tạo)
+      const isOwner = await this.taskRepository.checkTaskContentOwnership(+id, userId)
+      if (!isOwner) {
+        throw UserNotAssignedToTask
+      }
+
       const result = await this.taskRepository.updateTaskContent(+id, body)
       return SuccessResponse('TaskContent updated successfully', result)
     } catch (error) {
@@ -40,8 +75,20 @@ export class TaskService {
     }
   }
 
-  async updateTaskChecklist(id: string, body: UpdateTaskChecklistType) {
+  async updateTaskChecklist(id: string, body: UpdateTaskChecklistType, userId: string) {
     try {
+      // Lấy thông tin TaskChecklist để kiểm tra task_id
+      const taskChecklist = await this.taskRepository.getTaskChecklistById(+id)
+      if (!taskChecklist) {
+        throw TaskNotFound
+      }
+
+      // Kiểm tra xem user có được assign vào task này không
+      const isAssigned = await this.taskRepository.isUserAssignedToTask(taskChecklist.task_id, userId)
+      if (!isAssigned) {
+        throw UserNotAssignedToTask
+      }
+
       const result = await this.taskRepository.updateTaskChecklist(+id, body)
       return SuccessResponse('TaskChecklist updated successfully', result)
     } catch (error) {
@@ -50,8 +97,14 @@ export class TaskService {
     }
   }
 
-  async createTaskContent(body: CreateTaskContentType) {
+  async createTaskContent(body: CreateTaskContentType, userId: string) {
     try {
+      // Kiểm tra xem user có được assign vào task này không
+      const isAssigned = await this.taskRepository.isUserAssignedToTask(body.task_id, userId)
+      if (!isAssigned) {
+        throw UserNotAssignedToTask
+      }
+
       const result = await this.taskRepository.createTaskContent(body)
       return SuccessResponse('TaskContent created successfully', result)
     } catch (error) {
@@ -60,8 +113,14 @@ export class TaskService {
     }
   }
 
-  async createTaskChecklist(body: CreateTaskChecklistType) {
+  async createTaskChecklist(body: CreateTaskChecklistType, userId: string) {
     try {
+      // Kiểm tra xem user có được assign vào task này không
+      const isAssigned = await this.taskRepository.isUserAssignedToTask(body.task_id, userId)
+      if (!isAssigned) {
+        throw UserNotAssignedToTask
+      }
+
       const result = await this.taskRepository.createTaskChecklist(body)
       return SuccessResponse('TaskChecklist created successfully', result)
     } catch (error) {
@@ -70,7 +129,7 @@ export class TaskService {
     }
   }
 
-  async createTask(body: CreateTaskType) {
+  async createTask(body: CreateTaskType, taskImage: Express.Multer.File) {
     try {
       let due_at = body.due_at
       // tính due_at = start_at + time_spent_in_minutes
@@ -78,7 +137,14 @@ export class TaskService {
         const start = new Date(body.start_at)
         due_at = new Date(start.getTime() + body.time_spent_in_minutes * 60000).toISOString()
       }
-      const result = await this.taskRepository.createTask({ ...body, due_at })
+
+      // upload image len S3 voi folder name la tasks-images
+      let taskImageUrl = ''
+      this.validateFile(taskImage)
+      const uploadTaskImage = await this.s3.uploadFile(taskImage, 'tasks-images')
+      taskImageUrl = uploadTaskImage.url
+      console.log('taskImageUrl: ', taskImageUrl)
+      const result = await this.taskRepository.createTask({ ...body, due_at, image_url: taskImageUrl })
       return SuccessResponse('Task created successfully', result)
     } catch (error) {
       this.logger.error(error.message)
@@ -355,6 +421,65 @@ export class TaskService {
     try {
       const result = await this.taskRepository.getAllTaskRejects()
       return SuccessResponse('Task rejects retrieved successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async assignTaskToUser(body: AssingUserToTaskType) {
+    try {
+      // Kiểm tra task có tồn tại không
+      const existingTask = await this.taskRepository.getTaskById(body.task_id)
+      if (!existingTask) throw TaskNotFound
+
+      // Assign users to task
+      const result = await this.taskRepository.assignTaskToUser(body)
+
+      // Gửi email cho các users mới được assign
+      if (result.newlyAssignedUserIds.length > 0 && result.task) {
+        const newlyAssignedUsers = result.task.assignees.filter((assignee) =>
+          result.newlyAssignedUserIds.includes(assignee.user.id),
+        )
+
+        // Format due date cho email
+        const dueDateString = result.task.due_at 
+          ? new Date(result.task.due_at).toISOString().split('T')[0] // format: yyyy-MM-dd
+          : new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 7 days from now if no due date
+
+        // Gửi email cho từng user mới được assign
+        for (const assignee of newlyAssignedUsers) {
+          try {
+            await this.emailService.sendAssignTaskEmail({
+              email: assignee.user.email,
+              name: assignee.user.name,
+              task_name: result.task.name,
+              project_name: result.task.project.name,
+              due_date: dueDateString,
+            })
+            this.logger.log(`Task assignment email sent to ${assignee.user.email}`)
+          } catch (emailError) {
+            this.logger.error(`Failed to send task assignment email to ${assignee.user.email}: ${emailError.message}`)
+            // Continue with other emails even if one fails
+          }
+        }
+      }
+
+      const assignedUserCount = body.user_ids.length
+      const message =
+        assignedUserCount === 1
+          ? 'Task assigned to user successfully'
+          : `Task assigned to ${assignedUserCount} users successfully`
+      return SuccessResponse(message)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+  async getMyTasks(userId: string) {
+    try {
+      const result = await this.taskRepository.getMyTasks(userId)
+      return SuccessResponse('My Tasks retrieved successfully', result)
     } catch (error) {
       this.logger.error(error.message)
       throw error

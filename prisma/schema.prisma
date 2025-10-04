@@ -193,6 +193,10 @@ model User {
   email               String                 @unique
   password            String
   avatar_url          String?
+  phone               String?                @db.VarChar(15)
+  address             String?                @db.VarChar(255)
+  bio                 String?                @db.Text
+  nickname            String?                @db.VarChar(100)
   role_id             Int
   workspace_id        String?                @db.Uuid
   department_id       Int?
@@ -202,6 +206,7 @@ model User {
   updated_at          DateTime?              @updatedAt
   status              UserStatus
   dailyFocusLogs      DailyFocusLog[]
+  workingHoursLogs    WorkingHoursLog[]
   microFeedbacks      MicroFeedback[]
   notifications       Notification[]
   overallPerformances OverallPerformance[]
@@ -314,6 +319,30 @@ model DailyFocusLog {
   user            User      @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
+  @@index([user_id, created_at])
+}
+
+// Optional: Enhanced working hours tracking table
+model WorkingHoursLog {
+  id              Int       @id @default(autoincrement())
+  user_id         String    @db.Uuid
+  date            DateTime  @db.Date
+  start_time      DateTime?
+  end_time        DateTime?
+  break_minutes   Int?      @default(0)
+  total_minutes   Int?
+  is_holiday      Boolean   @default(false)
+  is_weekend      Boolean   @default(false)
+  overtime_minutes Int?     @default(0)
+  notes           String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime? @updatedAt
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, date])
+  @@index([user_id])
+  @@index([date])
 }
 
 model Project {
@@ -358,6 +387,7 @@ model Task {
   name                  String
   description           String?
   time_spent_in_minutes Int?
+  image_url             String?
   start_at              DateTime
   due_at                DateTime?
   completed_at          DateTime?

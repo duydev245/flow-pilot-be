@@ -11,6 +11,7 @@ export const CreateTaskSchema = taskSchema.pick({
   time_spent_in_minutes: true,
   priority: true,
   status: true,
+  image_url: true,
 })
 
 export const UpdateTaskSchema = taskSchema
@@ -21,6 +22,7 @@ export const UpdateTaskSchema = taskSchema
     due_at: true,
     priority: true,
     status: true,
+    image_url: true,
   })
   .partial()
 
@@ -96,6 +98,11 @@ export const UpdateTaskChecklistSchema = TaskChecklistSchema.pick({
   status: true,
   is_completed: true,
 }).partial()
+
+export const AssingUserToTaskShema = z.object({
+  task_id: z.uuid(),
+  user_ids: z.array(z.uuid()).min(1),
+})
 export type UpdateTaskContentType = z.infer<typeof UpdateTaskContentSchema>
 export type CreateTaskContentType = z.infer<typeof CreateTaskContentSchema>
 export type CreateTaskChecklistType = z.infer<typeof CreateTaskChecklistSchema>
@@ -106,3 +113,4 @@ export type CreateTaskType = z.infer<typeof CreateTaskSchema>
 export type UpdateTaskType = z.infer<typeof UpdateTaskSchema>
 export type CreateRejectHistoryType = z.infer<typeof CreateTaskRejectionHistorySchema>
 export type UpdateRejectHistoryType = z.infer<typeof UpdateTaskRejectionHistorySchema>
+export type AssingUserToTaskType = z.infer<typeof AssingUserToTaskShema>

@@ -7,7 +7,7 @@ import { PrismaService } from 'src/shared/services/prisma.service'
 
 @Injectable()
 export class UserRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   async getAllUsers(actorId: string, page: number, limit: number) {
     const skip = (page - 1) * limit
@@ -111,6 +111,10 @@ export class UserRepository {
         name: true,
         email: true,
         avatar_url: true,
+        phone: true,
+        address: true,
+        bio: true,
+        nickname: true,
         department_id: true,
         role_id: true,
         workspace_id: true,
