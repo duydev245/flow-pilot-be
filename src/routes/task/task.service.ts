@@ -16,6 +16,7 @@ import { TaskPriority, TaskStatus } from '@prisma/client'
 import { InvalidFile, InvalidFileExtension, InvalidFileSize } from 'src/routes/file/file.error'
 import path from 'path'
 import { S3StorageService } from 'src/shared/services/s3-storage.service'
+import { EmailService } from 'src/shared/services/email.service'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
 const ALLOWED_EXT = ['.png', '.jpg', '.jpeg']
@@ -30,6 +31,8 @@ export class TaskService {
 
   constructor(
     private readonly taskRepository: TaskRepository,
+    private readonly emailService: EmailService,
+
     private readonly s3: S3StorageService,
   ) {}
 
@@ -433,19 +436,47 @@ export class TaskService {
       // Assign users to task
       const result = await this.taskRepository.assignTaskToUser(body)
 
+      // Gửi email cho các users mới được assign
+      if (result.newlyAssignedUserIds.length > 0 && result.task) {
+        const newlyAssignedUsers = result.task.assignees.filter((assignee) =>
+          result.newlyAssignedUserIds.includes(assignee.user.id),
+        )
+
+        // Format due date cho email
+        const dueDateString = result.task.due_at 
+          ? new Date(result.task.due_at).toISOString().split('T')[0] // format: yyyy-MM-dd
+          : new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 7 days from now if no due date
+
+        // Gửi email cho từng user mới được assign
+        for (const assignee of newlyAssignedUsers) {
+          try {
+            await this.emailService.sendAssignTaskEmail({
+              email: assignee.user.email,
+              name: assignee.user.name,
+              task_name: result.task.name,
+              project_name: result.task.project.name,
+              due_date: dueDateString,
+            })
+            this.logger.log(`Task assignment email sent to ${assignee.user.email}`)
+          } catch (emailError) {
+            this.logger.error(`Failed to send task assignment email to ${assignee.user.email}: ${emailError.message}`)
+            // Continue with other emails even if one fails
+          }
+        }
+      }
+
       const assignedUserCount = body.user_ids.length
       const message =
         assignedUserCount === 1
           ? 'Task assigned to user successfully'
           : `Task assigned to ${assignedUserCount} users successfully`
-
-      return SuccessResponse(message, result)
+      return SuccessResponse(message)
     } catch (error) {
       this.logger.error(error.message)
       throw error
     }
   }
-  async getMyTasks(userId : string) {
+  async getMyTasks(userId: string) {
     try {
       const result = await this.taskRepository.getMyTasks(userId)
       return SuccessResponse('My Tasks retrieved successfully', result)

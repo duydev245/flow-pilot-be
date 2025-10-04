@@ -350,12 +350,18 @@ export class TaskRepository {
       })
     }
 
-    // Trả về task với thông tin assignees
-    return this.prismaService.task.findUnique({
+    // Trả về task với thông tin assignees và project, cùng với danh sách users mới được assign
+    const task = await this.prismaService.task.findUnique({
       where: { id: data.task_id },
       include: {
         contents: true,
         checklists: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         assignees: {
           include: {
             user: {
@@ -370,6 +376,11 @@ export class TaskRepository {
         },
       },
     })
+
+    return {
+      task,
+      newlyAssignedUserIds: userIdsToAdd,
+    }
   }
 
   async getMyTasks(userId: string) {
