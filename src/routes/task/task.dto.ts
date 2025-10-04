@@ -11,6 +11,7 @@ import {
   UpdateTaskChecklistSchema,
   CreateTaskRejectionHistorySchema,
   UpdateTaskRejectionHistorySchema,
+  AssingUserToTaskShema,
 } from './task.model'
 
 export class TaskBodyDto extends createZodDto(CreateTaskSchema) {}
@@ -25,3 +26,4 @@ export class CreateTaskReviewDto extends createZodDto(CreateTaskReviewSchema) {}
 export class UpdateTaskReviewDto extends createZodDto(UpdateTaskReviewSchema) {}
 export class CreateTaskRejectBodyDto extends createZodDto(CreateTaskRejectionHistorySchema) {}
 export class UpdateTaskRejectBodyDto extends createZodDto(UpdateTaskRejectionHistorySchema) {}
+export class AssingUserToTaskDto extends createZodDto(AssingUserToTaskShema) {}
