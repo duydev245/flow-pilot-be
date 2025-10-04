@@ -11,6 +11,7 @@ import {
   CreateTaskReviewType,
   CreateRejectHistoryType,
   UpdateTaskReviewType,
+  AssingUserToTaskType,
 } from './task.model'
 
 @Injectable()
@@ -43,6 +44,54 @@ export class TaskRepository {
       include: {
         contents: true,
         checklists: true,
+        files: {
+          select: {
+            id: true,
+            file_name: true,
+            file_url: true,
+            file_size: true,
+            mime_type: true,
+            uploaded_at: true,
+          },
+        },
+        reviews: {
+          include: {
+            reviewer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+            task_owner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            files: true,
+            reviews: true,
+          },
+        },
       },
     })
   }
@@ -53,6 +102,54 @@ export class TaskRepository {
       include: {
         contents: true,
         checklists: true,
+        files: {
+          select: {
+            id: true,
+            file_name: true,
+            file_url: true,
+            file_size: true,
+            mime_type: true,
+            uploaded_at: true,
+          },
+        },
+        reviews: {
+          include: {
+            reviewer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+            task_owner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            files: true,
+            reviews: true,
+          },
+        },
       },
     })
   }
@@ -65,6 +162,7 @@ export class TaskRepository {
       time_spent_in_minutes: data.time_spent_in_minutes,
       priority: data.priority,
       status: data.status,
+      image_url: data.image_url,
     }
     if (data.start_at) dataToCreate.start_at = new Date(data.start_at)
     if (data.due_at) dataToCreate.due_at = new Date(data.due_at)
@@ -211,6 +309,156 @@ export class TaskRepository {
   async getAllTaskRejects() {
     return this.prismaService.taskRejectionHistory.findMany({
       include: { task: true },
+    })
+  }
+  async assignTaskToUser(data: AssingUserToTaskType) {
+    // Lấy danh sách assignments hiện tại
+    const currentAssignments = await this.prismaService.taskUser.findMany({
+      where: { task_id: data.task_id },
+      select: { user_id: true },
+    })
+
+    const currentUserIds = currentAssignments.map((assignment) => assignment.user_id)
+    const newUserIds = data.user_ids
+
+    // Tìm user_ids cần thêm (có trong danh sách mới nhưng chưa được assign)
+    const userIdsToAdd = newUserIds.filter((userId) => !currentUserIds.includes(userId))
+
+    // Tìm user_ids cần xóa (đang được assign nhưng không có trong danh sách mới)
+    const userIdsToRemove = currentUserIds.filter((userId) => !newUserIds.includes(userId))
+
+    // Xóa assignments không còn cần thiết
+    if (userIdsToRemove.length > 0) {
+      await this.prismaService.taskUser.deleteMany({
+        where: {
+          task_id: data.task_id,
+          user_id: { in: userIdsToRemove },
+        },
+      })
+    }
+
+    // Thêm assignments mới
+    if (userIdsToAdd.length > 0) {
+      const taskUserData = userIdsToAdd.map((user_id) => ({
+        task_id: data.task_id,
+        user_id: user_id,
+        assigned_at: new Date(),
+      }))
+
+      await this.prismaService.taskUser.createMany({
+        data: taskUserData,
+      })
+    }
+
+    // Trả về task với thông tin assignees
+    return this.prismaService.task.findUnique({
+      where: { id: data.task_id },
+      include: {
+        contents: true,
+        checklists: true,
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+      },
+    })
+  }
+
+  async getMyTasks(userId: string) {
+    return this.prismaService.task.findMany({
+      where: {
+        assignees: {
+          some: {
+            user_id: userId,
+          },
+        },
+      },
+      include: {
+        contents: true,
+        checklists: true,
+        files: {
+          select: {
+            id: true,
+            file_name: true,
+            file_url: true,
+            file_size: true,
+            mime_type: true,
+            uploaded_at: true,
+          },
+        },
+        reviews: {
+          include: {
+            reviewer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+            task_owner: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+        assignees: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            files: true,
+            reviews: true,
+          },
+        },
+      },
+    })
+  }
+
+  async isUserAssignedToTask(taskId: string, userId: string): Promise<boolean> {
+    const taskUser = await this.prismaService.taskUser.findFirst({
+      where: {
+        task_id: taskId,
+        user_id: userId,
+      },
+    })
+    return !!taskUser
+  }
+
+  async checkTaskContentOwnership(taskContentId: number, userId: string): Promise<boolean> {
+    const taskContent = await this.prismaService.taskContent.findFirst({
+      where: {
+        id: taskContentId,
+        user_id: userId,
+      },
+    })
+    return !!taskContent
+  }
+
+  async getTaskChecklistById(id: number) {
+    return this.prismaService.taskChecklist.findUnique({
+      where: { id },
     })
   }
 }
