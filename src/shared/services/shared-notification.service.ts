@@ -117,7 +117,13 @@ export class SharedNotificationService {
 	}
 
 	async createAndSend(data: NotificationCreateType) {
+		await this.checkUserExists(data.user_id);
+
 		const notification = await this.sharedNotificationRepository.create(data);
+		if (!notification) {
+			throw new BadRequestException(NotificationErrors.CreateFailed);
+		}
+
 		const count = await this.sharedNotificationRepository.countUnread(data.user_id);
 
 		this.eventEmitter.emit('notification.created', {
