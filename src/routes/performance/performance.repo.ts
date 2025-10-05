@@ -616,4 +616,149 @@ export class PerformanceRepository {
     const totalMinutes = focusLogs.reduce((sum, log) => sum + log.focused_minutes, 0)
     return Math.round((totalMinutes / 60) * 10) / 10 // Convert to hours with 1 decimal place
   }
+
+  /**
+   * Get tasks count for a specific date or date range
+   */
+  async getTasksCountByDate(
+    userId: string, 
+    targetDate: Date, 
+    fromDate?: Date, 
+    toDate?: Date
+  ): Promise<number> {
+    let startDate: Date
+    let endDate: Date
+
+    if (fromDate && toDate) {
+      startDate = new Date(fromDate.setHours(0, 0, 0, 0))
+      endDate = new Date(toDate.setHours(23, 59, 59, 999))
+    } else {
+      startDate = new Date(targetDate.setHours(0, 0, 0, 0))
+      endDate = new Date(targetDate.setHours(23, 59, 59, 999))
+    }
+
+    const count = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId,
+        task: {
+          start_at: {
+            gte: startDate,
+            lte: endDate
+          }
+        }
+      }
+    })
+
+    return count
+  }
+
+  /**
+   * Get user's completion rate for a specific date or date range
+   */
+  async getUserCompletionRateByDate(
+    userId: string, 
+    targetDate: Date, 
+    fromDate?: Date, 
+    toDate?: Date
+  ): Promise<number> {
+    let startDate: Date
+    let endDate: Date
+
+    if (fromDate && toDate) {
+      startDate = new Date(fromDate.setHours(0, 0, 0, 0))
+      endDate = new Date(toDate.setHours(23, 59, 59, 999))
+    } else {
+      startDate = new Date(targetDate.setHours(0, 0, 0, 0))
+      endDate = new Date(targetDate.setHours(23, 59, 59, 999))
+    }
+
+    const totalTasks = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId,
+        task: {
+          start_at: {
+            gte: startDate,
+            lte: endDate
+          }
+        }
+      }
+    })
+
+    if (totalTasks === 0) return 0
+
+    const completedTasks = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId,
+        task: {
+          start_at: {
+            gte: startDate,
+            lte: endDate
+          },
+          status: 'completed'
+        }
+      }
+    })
+
+    return Math.round((completedTasks / totalTasks) * 100)
+  }
+
+  /**
+   * Get overdue tasks count for a specific date
+   */
+  async getOverdueTasksCountByDate(userId: string, targetDate: Date): Promise<number> {
+    const referenceDate = new Date(targetDate.setHours(23, 59, 59, 999))
+
+    const count = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId,
+        task: {
+          due_at: {
+            lt: referenceDate
+          },
+          status: {
+            notIn: ['completed', 'feedbacked']
+          }
+        }
+      }
+    })
+
+    return count
+  }
+
+  /**
+   * Get user's focus hours for a specific date or date range
+   */
+  async getFocusHoursByDate(
+    userId: string, 
+    targetDate: Date, 
+    fromDate?: Date, 
+    toDate?: Date
+  ): Promise<number> {
+    let startDate: Date
+    let endDate: Date
+
+    if (fromDate && toDate) {
+      startDate = new Date(fromDate.setHours(0, 0, 0, 0))
+      endDate = new Date(toDate.setHours(23, 59, 59, 999))
+    } else {
+      startDate = new Date(targetDate.setHours(0, 0, 0, 0))
+      endDate = new Date(targetDate.setHours(23, 59, 59, 999))
+    }
+
+    const focusLogs = await this.prismaService.dailyFocusLog.findMany({
+      where: {
+        user_id: userId,
+        created_at: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      select: {
+        focused_minutes: true
+      }
+    })
+
+    const totalMinutes = focusLogs.reduce((sum, log) => sum + log.focused_minutes, 0)
+    return Math.round((totalMinutes / 60) * 10) / 10 // Convert to hours with 1 decimal place
+  }
 }
