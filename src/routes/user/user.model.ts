@@ -35,6 +35,10 @@ export const UserUpdateByAdminSchema = z.object({
 export const UserUpdateProfileSchema = z.object({
   name: z.string().optional(),
   avatar_url: z.string().optional().nullable(),
+  phone: z.string().min(10).max(15).nullable().optional(),
+  address: z.string().min(1).max(500).nullable().optional(),
+  bio: z.string().min(1).max(500).nullable().optional(),
+  nickname: z.string().min(1).max(100).nullable().optional(),
 })
 
 export const ActiveUserSchema = z.object({

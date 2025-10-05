@@ -15,6 +15,7 @@ export const AccessUser = createParamDecorator((data: unknown, ctx: ExecutionCon
   return req.user
 })
 
+
 export const GetRoleUser = createParamDecorator((data: unknown, ctx: ExecutionContext) => {
   const req = ctx.switchToHttp().getRequest()
   return req.user.role.role

@@ -9,6 +9,14 @@ export const InvalidFile = new BadRequestException({
 	code: 'INVALID_FILE_EXCEPTION',
 	message: 'Invalid file',
 })
+export const InvalidFileSize = new BadRequestException({
+	code: 'INVALID_FILE_SIZE',
+	message: 'File size is too large',
+})
+export const InvalidFileExtension = new BadRequestException({
+	code: 'INVALID_FILE_EXTENSION',
+	message: 'Invalid file extension',
+})
 
 export const UploadFileFail = new InternalServerErrorException({
 	code: 'UPLOAD_FILE_EXCEPTION',

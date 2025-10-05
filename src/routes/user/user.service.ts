@@ -18,9 +18,35 @@ import { validate as isUuid } from 'uuid'
 import { EmailService } from 'src/shared/services/email.service'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { SharedRoleRepository } from 'src/shared/repositories/shared-role.repo'
+import { S3StorageService } from 'src/shared/services/s3-storage.service'
+import { InvalidFile } from '../file/file.error'
+import path from 'path'
 
-// 👉 Tóm gọn flow cơ bản:
-//  Authorize(Guard) → Validate (Zod DTO) → Transform (Service) → Business checks (Service) → Persist (DB) (Repository) → Response (Service)
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+const ALLOWED_EXT = ['.png', '.jpg', '.jpeg']
+
+function getExtension(filename: string) {
+  const ext = path.extname(filename || '').toLowerCase()
+  return ext
+}
+
+function sanitizeFilename(name: string, maxLen = 255) {
+  if (!name) return 'file'
+  // Normalize Unicode, remove nulls and control characters, replace path separators
+  let s = name.normalize('NFC')
+  s = s.replace(/\0/g, '')
+  // remove control chars by filtering codepoints (avoid problematic regex ranges)
+  s = Array.from(s)
+    .filter(ch => {
+      const code = ch.charCodeAt(0)
+      return code > 31 && code !== 127
+    })
+    .join('')
+  s = s.replace(/\//g, '_').replace(/\\/g, '_')
+  s = s.trim()
+  if (s.length > maxLen) s = s.slice(0, maxLen)
+  return s || 'file'
+}
 
 @Injectable()
 export class UserService {
@@ -32,7 +58,15 @@ export class UserService {
     private readonly userRepository: UserRepository,
     private readonly sharedUserRepository: SharedUserRepository,
     private readonly sharedRoleRepository: SharedRoleRepository,
+    private readonly s3: S3StorageService,
   ) { }
+
+  validateFile(file: Express.Multer.File) {
+    if (!file) throw InvalidFile
+    if (file.size > MAX_FILE_SIZE) throw InvalidFile
+    const ext = getExtension(file.originalname)
+    if (!ALLOWED_EXT.includes(ext)) throw InvalidFile
+  }
 
   async isSuperAdminAccount(userId: string) {
     const user = await this.sharedUserRepository.findUniqueWithRole({ id: userId })
@@ -95,9 +129,19 @@ export class UserService {
     }
   }
 
-  async updateProfile(userId: string, data: UserUpdateProfileType) {
+  async updateProfile(userId: string, data: UserUpdateProfileType, avatar?: Express.Multer.File) {
     try {
-      await this.sharedUserRepository.update({ id: userId }, data)
+      let avatar_url: string | undefined;
+
+      if (avatar) {
+        this.validateFile(avatar);
+        const res = await this.s3.uploadFile(avatar, 'avatars')
+        avatar_url = res.url
+      }
+
+      const updateData = avatar_url ? { ...data, avatar_url } : { ...data };
+
+      await this.sharedUserRepository.update({ id: userId }, updateData)
       return SuccessResponse('Update profile successful')
     } catch (error) {
       this.logger.error(error.message);

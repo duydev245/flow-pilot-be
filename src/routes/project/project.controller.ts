@@ -6,8 +6,9 @@ import {
   ProjectAdminBodyDto,
   ProjectBodyDto,
   ProjectUpdateDto,
+  AssignUsersToProjectDto,
+  UpdateUserRoleInProjectDto,
 } from 'src/routes/project/project.dto'
-import type { AssignUsersToProjectDto } from './project.model'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { GetWorkSpaceId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
@@ -21,6 +22,7 @@ import { ProjectService } from './project.service'
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
+  // Super admin routes
   @Get('/super-admin')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
@@ -61,10 +63,10 @@ export class ProjectController {
     return this.projectService.deleteProjectBySuperAdmin(id)
   }
 
-  // Get all projects by all users in the workspace
+  //Other user routes
   @Get()
   @UseGuards(AuthRoleGuard)
-  @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
+  @Roles([RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   getAllProject(
     @Query('page') page: number = 1,
@@ -73,9 +75,10 @@ export class ProjectController {
   ) {
     return this.projectService.getAllProject(workspace_id, { page: Number(page), limit: Number(limit) })
   }
+  
   @Get('/:id')
   @UseGuards(AuthRoleGuard)
-  @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
+  @Roles([RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   getProjectByIdUser(@Param('id') id: string, @GetWorkSpaceId() workspace_id: string) {
     return this.projectService.getProjectById(id, workspace_id)
@@ -111,5 +114,59 @@ export class ProjectController {
   @ZodSerializerDto(MessageResDTO)
   assignUsersToProject(@Param('id') projectId: string, @Body() body: AssignUsersToProjectDto) {
     return this.projectService.assignUsersToProject(projectId, body)
+  }
+
+  @Get('/:id/users')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
+  @ZodSerializerDto(MessageResDTO)
+  getProjectUsers(
+    @Param('id') projectId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @GetWorkSpaceId() workspace_id: string,
+  ) {
+    return this.projectService.getProjectUsers(projectId, workspace_id, { page: Number(page), limit: Number(limit) })
+  }
+
+  @Delete('/:id/users/:userId')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
+  @ZodSerializerDto(MessageResDTO)
+  removeUserFromProject(
+    @Param('id') projectId: string,
+    @Param('userId') userId: string,
+    @GetWorkSpaceId() workspace_id: string,
+  ) {
+    return this.projectService.removeUserFromProject(projectId, userId, workspace_id)
+  }
+
+  @Put('/:id/users/:userId/role')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
+  @ZodSerializerDto(MessageResDTO)
+  updateUserRoleInProject(
+    @Param('id') projectId: string,
+    @Param('userId') userId: string,
+    @Body() body: UpdateUserRoleInProjectDto,
+    @GetWorkSpaceId() workspace_id: string,
+  ) {
+    return this.projectService.updateUserRoleInProject(projectId, userId, body.role, workspace_id)
+  }
+
+  @Get('/:id/available-users')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
+  @ZodSerializerDto(MessageResDTO)
+  getAvailableUsersForProject(
+    @Param('id') projectId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @GetWorkSpaceId() workspace_id: string,
+  ) {
+    return this.projectService.getAvailableUsersForProject(projectId, workspace_id, {
+      page: Number(page),
+      limit: Number(limit),
+    })
   }
 }

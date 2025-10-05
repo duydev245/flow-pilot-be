@@ -50,4 +50,13 @@ export class FocusLogController {
   delete(@Param('id') id: string) {
     return this.focusLogService.delete(Number(id));
   }
+
+  // get('me') - get focus logs of the current user
+  @Get('me')
+  @Roles([RoleName.Employee, RoleName.Admin, RoleName.ProjectManager, RoleName.SuperAdmin])
+  getMyFocusLogs(@GetUserId() user_id: string) {
+    return this.focusLogService.getByUserId(user_id);
+  }
+  
 }
+

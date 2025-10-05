@@ -47,4 +47,47 @@ export class FocusLogService {
             throw new BadRequestException(FocusLogErrors.DeleteFailed);
         }
     }
+
+    async getByUserId(userId: string) {
+        try {
+            if (!userId) {
+                throw new BadRequestException(FocusLogErrors.InvalidUserId);
+            }
+
+            const logs = await this.focusLogRepo.findByUserId(userId);
+
+            if (!logs || logs.length === 0) {
+                throw new NotFoundException(FocusLogErrors.NoLogsFound);
+            }
+
+            // Aggregate logs by date (YYYY-MM-DD) using created_at
+            const map = new Map<string, { date: string; total_focused_minutes: number; notes: string[]; items: any[] }>();
+
+            for (const l of logs) {
+                const date = l.created_at instanceof Date ? l.created_at.toISOString().slice(0, 10) : String(l.created_at).slice(0, 10);
+                const existing = map.get(date);
+                if (existing) {
+                    existing.total_focused_minutes += l.focused_minutes || 0;
+                    if (l.note) existing.notes.push(l.note);
+                    existing.items.push(l);
+                } else {
+                    map.set(date, {
+                        date,
+                        total_focused_minutes: l.focused_minutes || 0,
+                        notes: l.note ? [l.note] : [],
+                        items: [l],
+                    });
+                }
+            }
+
+            const aggregated = Array.from(map.values()).sort((a, b) => (a.date < b.date ? 1 : -1));
+
+            return SuccessResponse('Get user focus logs successfully', aggregated);
+        } catch (err) {
+            if (err instanceof NotFoundException || err instanceof BadRequestException) {
+                throw err;
+            }
+            throw new BadRequestException(FocusLogErrors.GetByUserIdFailed);
+        }
+    }
 }
