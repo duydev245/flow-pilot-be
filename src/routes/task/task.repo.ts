@@ -472,4 +472,10 @@ export class TaskRepository {
       where: { id },
     })
   }
+
+  async getTaskContentById(id: number) {
+    return this.prismaService.taskContent.findUnique({
+      where: { id },
+    })
+  }
 }

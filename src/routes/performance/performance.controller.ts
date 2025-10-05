@@ -459,4 +459,17 @@ export class PerformanceController {
   ) {
     return await this.performanceService.getOrganizationDashboardSummary({ period, fromDate, toDate })
   }
+
+  /**
+   * Lấy tổng quan dashboard của người dùng
+   * Quyền: Nhân viên, Quản lý dự án hoặc Admin
+   * Trả về: 4 chỉ số chính: số task hôm nay, tỷ lệ hoàn thành, task quá hạn, giờ tập trung
+   */
+  @Get('dashboard-summary/:userId')
+  @Roles([RoleName.Employee, RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  async getUserDashboardSummary(@Param('userId') userId: string) {
+    return await this.performanceService.getUserDashboardSummary(userId)
+  }
 }

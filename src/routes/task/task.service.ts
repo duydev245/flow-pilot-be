@@ -47,7 +47,7 @@ export class TaskService {
   async updateTask(id: string, body: UpdateTaskType, taskImage?: Express.Multer.File) {
     try {
       let taskImageUrl = ''
-      
+
       if (taskImage) {
         this.validateFile(taskImage)
         const uploadTaskImage = await this.s3.uploadFile(taskImage, 'tasks-images')
@@ -69,6 +69,18 @@ export class TaskService {
       // Kiểm tra xem user có quyền sửa TaskContent này không (phải là người tạo)
       const isOwner = await this.taskRepository.checkTaskContentOwnership(+id, userId)
       if (!isOwner) {
+        throw UserNotAssignedToTask
+      }
+
+      // Lấy thông tin TaskContent để kiểm tra task_id
+      const taskContent = await this.taskRepository.getTaskContentById(+id)
+      if (!taskContent) {
+        throw TaskNotFound
+      }
+
+      // Kiểm tra xem user có vẫn được assign vào task này không
+      const isAssigned = await this.taskRepository.isUserAssignedToTask(taskContent.task_id, userId)
+      if (!isAssigned) {
         throw UserNotAssignedToTask
       }
 
@@ -134,7 +146,7 @@ export class TaskService {
     }
   }
 
-  async createTask(body: CreateTaskType, taskImage: Express.Multer.File) {
+  async createTask(body: CreateTaskType, taskImage?: Express.Multer.File) {
     try {
       let due_at = body.due_at
       // tính due_at = start_at + time_spent_in_minutes
@@ -142,13 +154,15 @@ export class TaskService {
         const start = new Date(body.start_at)
         due_at = new Date(start.getTime() + body.time_spent_in_minutes * 60000).toISOString()
       }
-
-      // upload image len S3 voi folder name la tasks-images
       let taskImageUrl = ''
-      this.validateFile(taskImage)
-      const uploadTaskImage = await this.s3.uploadFile(taskImage, 'tasks-images')
-      taskImageUrl = uploadTaskImage.url
-      console.log('taskImageUrl: ', taskImageUrl)
+
+      if (taskImage) {
+        // upload image len S3 voi folder name la tasks-images
+        this.validateFile(taskImage)
+        const uploadTaskImage = await this.s3.uploadFile(taskImage, 'tasks-images')
+        taskImageUrl = uploadTaskImage.url
+      }
+
       const result = await this.taskRepository.createTask({ ...body, due_at, image_url: taskImageUrl })
       return SuccessResponse('Task created successfully', result)
     } catch (error) {
@@ -448,7 +462,7 @@ export class TaskService {
         )
 
         // Format due date cho email
-        const dueDateString = result.task.due_at 
+        const dueDateString = result.task.due_at
           ? new Date(result.task.due_at).toISOString().split('T')[0] // format: yyyy-MM-dd
           : new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 7 days from now if no due date
 
@@ -476,7 +490,7 @@ export class TaskService {
           ? 'Task assigned to user successfully'
           : `Task assigned to ${assignedUserCount} users successfully`
       return SuccessResponse(message)
-  } catch (error) {
+    } catch (error) {
       this.logger.error(error.message)
       throw error
     }
