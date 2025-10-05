@@ -1,5 +1,14 @@
 import { createZodDto } from 'nestjs-zod'
-import { CreateProjectSchema, CreateProjectSchemaByAdmin, ProjectIdSchema, UpdateProjectByAdminSchema, UpdateProjectByUserSchema } from 'src/routes/project/project.model'
+import { 
+  CreateProjectSchema, 
+  CreateProjectSchemaByAdmin, 
+  ProjectIdSchema, 
+  UpdateProjectByAdminSchema, 
+  UpdateProjectByUserSchema,
+  AssignUsersToProjectSchema,
+  UpdateUserRoleInProjectSchema,
+  RemoveUserFromProjectSchema
+} from 'src/routes/project/project.model'
 import { } from 'src/shared/models/shared-project-model'
 
 export class ProjectAdminBodyDto extends createZodDto(CreateProjectSchemaByAdmin) {}
@@ -7,3 +16,8 @@ export class ProjecAdmintUpdateDto extends createZodDto(UpdateProjectByAdminSche
 export class ProjectUpdateDto extends createZodDto(UpdateProjectByUserSchema) {}
 export class ProjectIdDto extends createZodDto(ProjectIdSchema) {}
 export class ProjectBodyDto extends createZodDto(CreateProjectSchema) {}
+
+// DTOs for user assignment functionality
+export class AssignUsersToProjectDto extends createZodDto(AssignUsersToProjectSchema) {}
+export class UpdateUserRoleInProjectDto extends createZodDto(UpdateUserRoleInProjectSchema) {}
+export class RemoveUserFromProjectDto extends createZodDto(RemoveUserFromProjectSchema) {}

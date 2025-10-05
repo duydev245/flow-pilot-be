@@ -1,4 +1,4 @@
-import type { AssignUsersToProjectDto } from './project.model'
+import type { AssignUsersToProjectDto, PaginationParams } from './project.model'
 import { Injectable, Logger } from '@nestjs/common'
 import {
   CreateProjectByAdminType,
@@ -118,6 +118,46 @@ export class ProjectService {
       await this.projectRepository.getProjectById(id, workspaceId)
       const result = await this.projectRepository.deleteProjectBySuperAdmin(id)
       return SuccessResponse('Delete project by user successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async getProjectUsers(projectId: string, workspaceId: string, pagination: PaginationParams) {
+    try {
+      const result = await this.projectRepository.getProjectUsers(projectId, workspaceId, pagination)
+      return SuccessResponse('Get project users successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async removeUserFromProject(projectId: string, userId: string, workspaceId: string) {
+    try {
+      const result = await this.projectRepository.removeUserFromProject(projectId, userId, workspaceId)
+      return SuccessResponse('Remove user from project successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async updateUserRoleInProject(projectId: string, userId: string, role: string, workspaceId: string) {
+    try {
+      const result = await this.projectRepository.updateUserRoleInProject(projectId, userId, role, workspaceId)
+      return SuccessResponse('Update user role in project successfully', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
+  async getAvailableUsersForProject(projectId: string, workspaceId: string, pagination: PaginationParams) {
+    try {
+      const result = await this.projectRepository.getAvailableUsersForProject(projectId, workspaceId, pagination)
+      return SuccessResponse('Get available users for project successfully', result)
     } catch (error) {
       this.logger.error(error.message)
       throw error

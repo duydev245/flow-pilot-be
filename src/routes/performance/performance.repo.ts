@@ -258,4 +258,267 @@ export class PerformanceRepository {
       orderBy: { created_at: 'asc' },
     })
   }
+
+  // Aggregate methods for all employees and projects
+
+  /**
+   * Get all employees
+   */
+  async getAllEmployees() {
+    return this.prismaService.user.findMany({
+      where: {
+        status: 'active',
+      },
+      include: {
+        department: true,
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get employees in a specific project
+   */
+  async getProjectEmployees(projectId: string) {
+    const projectUsers = await this.prismaService.projectUser.findMany({
+      where: { project_id: projectId },
+      include: {
+        user: {
+          include: {
+            department: true,
+          },
+        },
+      },
+    })
+    
+    return projectUsers.map(pu => ({
+      id: pu.user.id,
+      name: pu.user.name,
+      email: pu.user.email,
+      status: pu.user.status,
+      department: pu.user.department,
+      role: pu.role,
+    }))
+  }
+
+  /**
+   * Get all projects
+   */
+  async getAllProjects() {
+    return this.prismaService.project.findMany({
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get all active projects
+   */
+  async getActiveProjects() {
+    return this.prismaService.project.findMany({
+      where: {
+        status: 'active',
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get project tasks with assignees for aggregate calculations
+   */
+  async getProjectTasksWithAssignees(projectId: string, fromDate?: Date, toDate?: Date) {
+    return this.prismaService.task.findMany({
+      where: {
+        project_id: projectId,
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get all tasks across all projects
+   */
+  async getAllTasks(fromDate?: Date, toDate?: Date) {
+    return this.prismaService.task.findMany({
+      where: {
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        assignees: {
+          include: {
+            user: true,
+          },
+        },
+        project: true,
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get all performance data across organization
+   */
+  async getAllPerformanceData(fromDate?: Date, toDate?: Date, projectId?: string) {
+    return this.prismaService.performanceData.findMany({
+      where: {
+        ...(projectId && { project_id: projectId }),
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        user: {
+          include: {
+            department: true,
+          },
+        },
+        project: true,
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get organization-wide focus logs for working hours analysis
+   */
+  async getAllFocusLogs(fromDate?: Date, toDate?: Date) {
+    return this.prismaService.dailyFocusLog.findMany({
+      where: {
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        user: {
+          include: {
+            department: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get all task rejections for organization-wide error tracking
+   */
+  async getAllTaskRejections(fromDate?: Date, toDate?: Date, projectId?: string) {
+    return this.prismaService.taskRejectionHistory.findMany({
+      where: {
+        ...(projectId && {
+          task: {
+            project_id: projectId,
+          },
+        }),
+        ...(fromDate && { created_at: { gte: fromDate } }),
+        ...(toDate && { created_at: { lte: toDate } }),
+      },
+      include: {
+        task: {
+          include: {
+            assignees: {
+              include: {
+                user: true,
+              },
+            },
+            project: true,
+          },
+        },
+      },
+      orderBy: { created_at: 'asc' },
+    })
+  }
+
+  /**
+   * Get department-wise statistics
+   */
+  async getDepartmentStats(fromDate?: Date, toDate?: Date) {
+    // Get all departments with basic info
+    const departments = await this.prismaService.department.findMany({
+      include: {
+        users: true,
+      },
+    })
+    
+    return departments
+  }
+
+  /**
+   * Get project statistics with member performance
+   */
+  async getProjectStatsWithMembers(projectId: string, fromDate?: Date, toDate?: Date) {
+    return this.prismaService.project.findUnique({
+      where: { id: projectId },
+      include: {
+        tasks: {
+          where: {
+            ...(fromDate && { created_at: { gte: fromDate } }),
+            ...(toDate && { created_at: { lte: toDate } }),
+          },
+          include: {
+            assignees: {
+              include: {
+                user: true,
+              },
+            },
+          },
+        },
+        members: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    })
+  }
+
+  /**
+   * Get users with status tracking for dashboard
+   */
+  async getUsersWithStatusByMonth(monthStart: Date, monthEnd: Date) {
+    return this.prismaService.user.findMany({
+      where: {
+        created_at: { lte: monthEnd }
+      }
+    })
+  }
+
+  /**
+   * Count new hires in a period
+   */
+  async countNewHires(startDate: Date, endDate: Date) {
+    return this.prismaService.user.count({
+      where: {
+        created_at: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+    })
+  }
+
+  /**
+   * Find HR manager
+   */
+  async findHRManager() {
+    return this.prismaService.user.findFirst({
+      where: {
+        OR: [
+          { name: { contains: 'HR', mode: 'insensitive' } },
+          { name: { contains: 'Human Resources', mode: 'insensitive' } },
+          { department: { name: { contains: 'HR', mode: 'insensitive' } } }
+        ]
+      },
+      include: {
+        department: true
+      }
+    })
+  }
 }

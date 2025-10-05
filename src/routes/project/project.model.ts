@@ -59,4 +59,24 @@ export const AssignUsersToProjectSchema = z.object({
     })
   ),
 });
+
+// DTO cho update role của user trong project
+export const UpdateUserRoleInProjectSchema = z.object({
+  role: z.string(),
+});
+
+// DTO cho remove user khỏi project
+export const RemoveUserFromProjectSchema = z.object({
+  user_id: z.string(),
+});
+
+// Interface cho pagination
+export const PaginationParamsSchema = z.object({
+  page: z.number().min(1).default(1),
+  limit: z.number().min(1).max(100).default(10),
+});
+
 export type AssignUsersToProjectDto = z.infer<typeof AssignUsersToProjectSchema>;
+export type UpdateUserRoleInProjectDto = z.infer<typeof UpdateUserRoleInProjectSchema>;
+export type RemoveUserFromProjectDto = z.infer<typeof RemoveUserFromProjectSchema>;
+export type PaginationParams = z.infer<typeof PaginationParamsSchema>;
