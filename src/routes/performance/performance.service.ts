@@ -1677,12 +1677,33 @@ export class PerformanceService {
   /**
    * Get user dashboard summary with key metrics
    */
-  async getUserDashboardSummary(userId: string) {
+  async getUserDashboardSummary(
+    userId: string,
+    dateParams?: { date?: string; fromDate?: string; toDate?: string },
+  ) {
+    // Xác định ngày để query
+    let targetDate: Date
+    let fromDate: Date | undefined
+    let toDate: Date | undefined
+
+    if (dateParams?.date) {
+      // Nếu có date cụ thể, sử dụng ngày đó
+      targetDate = new Date(dateParams.date)
+    } else if (dateParams?.fromDate && dateParams?.toDate) {
+      // Nếu có khoảng thời gian, sử dụng fromDate và toDate
+      fromDate = new Date(dateParams.fromDate)
+      toDate = new Date(dateParams.toDate)
+      targetDate = fromDate // Sử dụng fromDate làm reference
+    } else {
+      // Mặc định là hôm nay
+      targetDate = new Date()
+    }
+
     const [todayTasks, completionRate, overdueTasks, focusHours] = await Promise.all([
-      this.performanceRepository.getTodayTasksCount(userId),
-      this.performanceRepository.getUserCompletionRate(userId),
-      this.performanceRepository.getOverdueTasksCount(userId),
-      this.performanceRepository.getTodayFocusHours(userId),
+      this.performanceRepository.getTasksCountByDate(userId, targetDate, fromDate, toDate),
+      this.performanceRepository.getUserCompletionRateByDate(userId, targetDate, fromDate, toDate),
+      this.performanceRepository.getOverdueTasksCountByDate(userId, targetDate),
+      this.performanceRepository.getFocusHoursByDate(userId, targetDate, fromDate, toDate),
     ])
 
     return SuccessResponse('Get dashboard summary successfully', {
