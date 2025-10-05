@@ -163,8 +163,8 @@ export class TaskRepository {
       priority: data.priority,
       status: data.status,
       image_url: data.image_url,
+      start_at: data.start_at ? new Date(data.start_at) : new Date(), // Nếu không có start_at thì dùng thời gian hiện tại
     }
-    if (data.start_at) dataToCreate.start_at = new Date(data.start_at)
     if (data.due_at) dataToCreate.due_at = new Date(data.due_at)
     const created = await this.prismaService.task.create({
       data: dataToCreate,
