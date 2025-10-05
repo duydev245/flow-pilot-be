@@ -14,66 +14,111 @@ const main = async () => {
     throw new Error('Packages already exist')
   }
 
-  const pkgBasic = await prisma.package.upsert({
-    where: { name: 'Basic' },
+  // Tạo 3 gói: TEAM, GROWTH, ENTERPRISE
+  const pkgTeam = await prisma.package.upsert({
+    where: { name: 'TEAM' },
     update: {},
     create: {
       id: generateUuid(),
-      name: 'Basic',
-      price: 5000,
+      name: 'TEAM',
+      duration_in_months: 1,
+      price: 299000,
+      description: 'Gói cho đội ngũ nhỏ',
       status: 'active',
     },
   })
 
-  const pkgPro = await prisma.package.upsert({
-    where: { name: 'Pro' },
+  const pkgGrowth = await prisma.package.upsert({
+    where: { name: 'GROWTH' },
     update: {},
     create: {
       id: generateUuid(),
-      name: 'Pro',
-      price: 10000,
+      name: 'GROWTH',
+      duration_in_months: 1,
+      price: 799000,
+      description: 'Gói mở rộng cho tăng trưởng',
       status: 'active',
     },
   })
 
-  // 1.1 Features
-  // Tạo 2 features cho mỗi package
-  const feature1 = await prisma.feature.create({
-    data: {
+  const pkgEnterprise = await prisma.package.upsert({
+    where: { name: 'ENTERPRISE' },
+    update: {},
+    create: {
       id: generateUuid(),
-      name: 'Kanban Board',
-      description: 'Quản lý công việc theo dạng bảng Kanban',
-      package_id: pkgBasic.id,
+      name: 'ENTERPRISE',
+      duration_in_months: 1,
+      price: 1199000,
+      description: 'Gói dành cho doanh nghiệp lớn',
       status: 'active',
     },
   })
-  const feature2 = await prisma.feature.create({
-    data: {
-      id: generateUuid(),
-      name: 'Task Assignment',
-      description: 'Giao việc cho thành viên',
-      package_id: pkgBasic.id,
-      status: 'active',
-    },
-  })
-  const feature3 = await prisma.feature.create({
-    data: {
-      id: generateUuid(),
-      name: 'Advanced Report',
-      description: 'Báo cáo nâng cao cho quản lý',
-      package_id: pkgPro.id,
-      status: 'active',
-    },
-  })
-  const feature4 = await prisma.feature.create({
-    data: {
-      id: generateUuid(),
-      name: 'Time Tracking',
-      description: 'Theo dõi thời gian làm việc từng task',
-      package_id: pkgPro.id,
-      status: 'active',
-    },
-  })
+
+  // 1.1 Features (dữ liệu tiếng Việt)
+  const teamFeatures = [
+    { name: 'Tối đa 10 thành viên', description: 'Hạn mức 10 thành viên cho workspace' },
+    { name: 'Quản lý hồ sơ nhân sự, nghỉ phép, chấm công', description: 'Quản lý thông tin nhân sự, đơn nghỉ phép và chấm công cơ bản' },
+    { name: 'Chế độ Tập trung', description: 'Chế độ giúp tăng sự tập trung khi làm việc' },
+    { name: 'Báo cáo hiệu suất cơ bản (tuần/tháng)', description: 'Báo cáo đơn giản theo tuần và tháng' },
+    { name: 'Hỗ trợ qua email', description: 'Hỗ trợ khách hàng thông qua email' },
+  ]
+
+  for (const f of teamFeatures) {
+    await prisma.feature.create({
+      data: {
+        id: generateUuid(),
+        name: f.name,
+        description: f.description,
+        package_id: pkgTeam.id,
+        status: 'active',
+      },
+    })
+  }
+
+  const growthFeatures = [
+    { name: 'Tối đa 30 thành viên', description: 'Hạn mức 30 thành viên cho workspace' },
+    { name: 'Toàn bộ tính năng trong Team', description: 'Bao gồm toàn bộ tính năng của gói TEAM' },
+    { name: 'Báo cáo AI về hiệu suất & năng suất làm việc', description: 'Báo cáo phân tích bằng AI về hiệu suất và năng suất' },
+    { name: 'Bảng điều khiển theo thời gian thực', description: 'Dashboard cập nhật số liệu theo thời gian thực' },
+    { name: 'Đánh giá hiệu suất 360° & phản hồi đa chiều', description: 'Đánh giá toàn diện và thu thập phản hồi từ nhiều nguồn' },
+    { name: 'Tùy chỉnh KPI & mục tiêu nhóm', description: 'Cấu hình KPI và mục tiêu cho từng nhóm' },
+    { name: 'Báo cáo tự động (tuần/tháng/quý)', description: 'Tự động gửi báo cáo định kỳ' },
+    { name: 'Hỗ trợ ưu tiên', description: 'Ưu tiên hỗ trợ khách hàng' },
+  ]
+
+  for (const f of growthFeatures) {
+    await prisma.feature.create({
+      data: {
+        id: generateUuid(),
+        name: f.name,
+        description: f.description,
+        package_id: pkgGrowth.id,
+        status: 'active',
+      },
+    })
+  }
+
+  const enterpriseFeatures = [
+    { name: '50 thành viên (có thể mở rộng thêm)', description: 'Hạn mức 50 thành viên, có thể nâng cấp mở rộng' },
+    { name: 'Toàn bộ tính năng trong Growth', description: 'Bao gồm toàn bộ tính năng của gói GROWTH' },
+    { name: 'Phân tích AI nâng cao: dự báo hiệu suất, phát hiện nguy cơ nghỉ việc', description: 'Phân tích nâng cao dùng AI để dự báo và phát hiện rủi ro' },
+    { name: 'Tự động hóa quy trình nhân sự (nhắc nhở, phê duyệt, onboarding)', description: 'Workflows tự động cho quy trình nhân sự' },
+    { name: 'Báo cáo tùy biến theo nhu cầu doanh nghiệp', description: 'Báo cáo có thể tuỳ chỉnh theo yêu cầu' },
+    { name: 'Hỗ trợ riêng', description: 'Dedicated support cho khách hàng doanh nghiệp' },
+    { name: 'Bảo mật nâng cao (SSO, phân quyền truy cập chi tiết)', description: 'Tính năng bảo mật doanh nghiệp: SSO và phân quyền chi tiết' },
+  ]
+
+  for (const f of enterpriseFeatures) {
+    await prisma.feature.create({
+      data: {
+        id: generateUuid(),
+        name: f.name,
+        description: f.description,
+        package_id: pkgEnterprise.id,
+        status: 'active',
+      },
+    })
+  }
 
   // 2. Workspace
   const wsCount = await prisma.workspace.count()
@@ -86,7 +131,7 @@ const main = async () => {
       id: generateUuid(),
       name: 'ACME Workspace',
       company_name: 'ACME Ltd.',
-      package_id: pkgPro.id,
+  package_id: pkgGrowth.id,
       start_date: new Date(),
       expire_date: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
       status: 'active',
