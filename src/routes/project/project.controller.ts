@@ -22,6 +22,7 @@ import { ProjectService } from './project.service'
 export class ProjectController {
   constructor(private readonly projectService: ProjectService) {}
 
+  // Super admin routes
   @Get('/super-admin')
   @Roles([RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
@@ -62,10 +63,10 @@ export class ProjectController {
     return this.projectService.deleteProjectBySuperAdmin(id)
   }
 
-  // Get all projects by all users in the workspace
+  //Other user routes
   @Get()
   @UseGuards(AuthRoleGuard)
-  @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
+  @Roles([RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   getAllProject(
     @Query('page') page: number = 1,
@@ -74,9 +75,10 @@ export class ProjectController {
   ) {
     return this.projectService.getAllProject(workspace_id, { page: Number(page), limit: Number(limit) })
   }
+  
   @Get('/:id')
   @UseGuards(AuthRoleGuard)
-  @Roles([RoleName.SuperAdmin, RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
+  @Roles([RoleName.Admin, RoleName.Employee, RoleName.ProjectManager])
   @ZodSerializerDto(MessageResDTO)
   getProjectByIdUser(@Param('id') id: string, @GetWorkSpaceId() workspace_id: string) {
     return this.projectService.getProjectById(id, workspace_id)

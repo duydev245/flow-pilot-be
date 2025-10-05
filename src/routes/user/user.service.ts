@@ -129,15 +129,19 @@ export class UserService {
     }
   }
 
-  async updateProfile(avatar: Express.Multer.File, userId: string, data: UserUpdateProfileType) {
-    this.validateFile(avatar);
-    let avatar_url: string;
-
+  async updateProfile(userId: string, data: UserUpdateProfileType, avatar?: Express.Multer.File) {
     try {
-      const res = await this.s3.uploadFile(avatar, 'avatars')
-      avatar_url = res.url
+      let avatar_url: string | undefined;
 
-      await this.sharedUserRepository.update({ id: userId }, { ...data, avatar_url })
+      if (avatar) {
+        this.validateFile(avatar);
+        const res = await this.s3.uploadFile(avatar, 'avatars')
+        avatar_url = res.url
+      }
+
+      const updateData = avatar_url ? { ...data, avatar_url } : { ...data };
+
+      await this.sharedUserRepository.update({ id: userId }, updateData)
       return SuccessResponse('Update profile successful')
     } catch (error) {
       this.logger.error(error.message);

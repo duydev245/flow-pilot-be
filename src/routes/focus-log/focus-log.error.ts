@@ -15,4 +15,16 @@ export const FocusLogErrors = {
     code: 'FOCUS_LOG_DELETE_FAILED',
     message: 'Failed to delete focus log.'
   },
+  InvalidUserId: {
+    code: 'INVALID_USER_ID',
+    message: 'Invalid user ID provided.'
+  },
+  NoLogsFound: {
+    code: 'NO_FOCUS_LOGS_FOUND',
+    message: 'No focus logs found for this user.'
+  },
+  GetByUserIdFailed: {
+    code: 'GET_USER_FOCUS_LOGS_FAILED',
+    message: 'Failed to get focus logs for user.'
+  },
 };
