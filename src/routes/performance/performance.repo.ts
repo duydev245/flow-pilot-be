@@ -521,4 +521,99 @@ export class PerformanceRepository {
       }
     })
   }
+
+  /**
+   * Get today's tasks count for a user
+   */
+  async getTodayTasksCount(userId: string): Promise<number> {
+    const today = new Date()
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0))
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999))
+
+    const count = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId,
+        task: {
+          start_at: {
+            gte: startOfDay,
+            lte: endOfDay
+          }
+        }
+      }
+    })
+
+    return count
+  }
+
+  /**
+   * Get user's task completion rate
+   */
+  async getUserCompletionRate(userId: string): Promise<number> {
+    const totalTasks = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId
+      }
+    })
+
+    if (totalTasks === 0) return 0
+
+    const completedTasks = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId,
+        task: {
+          status: 'completed'
+        }
+      }
+    })
+
+    return Math.round((completedTasks / totalTasks) * 100)
+  }
+
+  /**
+   * Get overdue tasks count for a user
+   */
+  async getOverdueTasksCount(userId: string): Promise<number> {
+    const now = new Date()
+
+    const count = await this.prismaService.taskUser.count({
+      where: {
+        user_id: userId,
+        task: {
+          due_at: {
+            lt: now
+          },
+          status: {
+            notIn: ['completed', 'feedbacked']
+          }
+        }
+      }
+    })
+
+    return count
+  }
+
+  /**
+   * Get user's focus hours for today
+   */
+  async getTodayFocusHours(userId: string): Promise<number> {
+    const today = new Date()
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0))
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999))
+
+    const focusLogs = await this.prismaService.dailyFocusLog.findMany({
+      where: {
+        user_id: userId,
+        created_at: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+      select: {
+        focused_minutes: true
+      }
+    })
+
+    const totalMinutes = focusLogs.reduce((sum, log) => sum + log.focused_minutes, 0)
+    return Math.round((totalMinutes / 60) * 10) / 10 // Convert to hours with 1 decimal place
+  }
 }

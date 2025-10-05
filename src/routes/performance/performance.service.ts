@@ -1673,4 +1673,23 @@ export class PerformanceService {
       title: hrManager?.department?.name === 'HR' ? 'HR Manager' : 'HR Manager',
     }
   }
+
+  /**
+   * Get user dashboard summary with key metrics
+   */
+  async getUserDashboardSummary(userId: string) {
+    const [todayTasks, completionRate, overdueTasks, focusHours] = await Promise.all([
+      this.performanceRepository.getTodayTasksCount(userId),
+      this.performanceRepository.getUserCompletionRate(userId),
+      this.performanceRepository.getOverdueTasksCount(userId),
+      this.performanceRepository.getTodayFocusHours(userId),
+    ])
+
+    return SuccessResponse('Get dashboard summary successfully', {
+      todayTasks,
+      completionRate,
+      overdueTasks,
+      focusHours,
+    })
+  }
 }

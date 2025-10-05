@@ -82,7 +82,7 @@ export class TaskController {
   @UseGuards(AuthRoleGuard)
   @UseInterceptors(FileInterceptor('taskImage'))
   @ZodSerializerDto(MessageResDTO)
-  createTask(@Body() body: TaskBodyDto, @UploadedFile() taskImage: Express.Multer.File) {
+  createTask(@Body() body: TaskBodyDto, @UploadedFile() taskImage?: Express.Multer.File) {
     return this.taskService.createTask(body, taskImage)
   }
 

@@ -218,3 +218,13 @@ export const OrganizationPerformanceSummarySchema = z.object({
     }),
   }),
 })
+
+// Schema for user dashboard summary response
+export const UserDashboardSummaryResponseSchema = z.object({
+  todayTasks: z.number(),
+  completionRate: z.number(), // percentage
+  overdueTasks: z.number(), 
+  focusHours: z.number(), // in hours with decimal
+})
+
+export type UserDashboardSummaryResponseType = z.infer<typeof UserDashboardSummaryResponseSchema>
