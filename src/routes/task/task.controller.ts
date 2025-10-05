@@ -1,18 +1,20 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
   Put,
-  UseGuards,
-  Delete,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common'
+import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { RoleName } from 'src/shared/constants/role.constant'
+import { GetUserId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
@@ -29,8 +31,6 @@ import {
   UpdateTaskReviewDto,
 } from './task.dto'
 import { TaskService } from './task.service'
-import { FileInterceptor } from '@nestjs/platform-express'
-import { GetUserId } from 'src/shared/decorators/active-user.decorator'
 
 @Controller('task')
 @ApiTags('Task Module')
@@ -123,7 +123,7 @@ export class TaskController {
   @UseGuards(AuthRoleGuard)
   @UseInterceptors(FileInterceptor('taskImage'))
   @ZodSerializerDto(MessageResDTO)
-  updateTask(@Param('id') id: string, @Body() body: TaskUpdateDto, @UploadedFile() taskImage: Express.Multer.File) {
+  updateTask(@Param('id') id: string, @Body() body: TaskUpdateDto, @UploadedFile() taskImage?: Express.Multer.File) {
     return this.taskService.updateTask(id, body, taskImage)
   }
 

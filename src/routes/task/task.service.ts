@@ -44,14 +44,19 @@ export class TaskService {
     if (!ALLOWED_EXT.includes(ext)) throw InvalidFileExtension
   }
 
-  async updateTask(id: string, body: UpdateTaskType, taskImage: Express.Multer.File) {
+  async updateTask(id: string, body: UpdateTaskType, taskImage?: Express.Multer.File) {
     try {
-      this.validateFile(taskImage)
-      // upload image len S3 voi folder name la tasks-images
       let taskImageUrl = ''
-      const uploadTaskImage = await this.s3.uploadFile(taskImage, 'tasks-images')
-      taskImageUrl = uploadTaskImage.url
-      const result = await this.taskRepository.updateTask(id, { ...body, image_url: taskImageUrl })
+      
+      if (taskImage) {
+        this.validateFile(taskImage)
+        const uploadTaskImage = await this.s3.uploadFile(taskImage, 'tasks-images')
+        taskImageUrl = uploadTaskImage.url
+      }
+
+      // Chỉ update image_url nếu có file mới được upload
+      const updateData = taskImage ? { ...body, image_url: taskImageUrl } : body
+      const result = await this.taskRepository.updateTask(id, updateData)
       return SuccessResponse('Task updated successfully', result)
     } catch (error) {
       this.logger.error(error.message)

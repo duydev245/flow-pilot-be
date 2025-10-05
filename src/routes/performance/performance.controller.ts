@@ -1,14 +1,12 @@
-import { Body, Controller, Get, Post, Query, UseGuards, Param } from '@nestjs/common'
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common'
 import { PerformanceService } from './performance.service'
 
+import { ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { RoleName } from 'src/shared/constants/role.constant'
-import { GetUserId } from 'src/shared/decorators/active-user.decorator'
 import { Roles } from 'src/shared/decorators/roles.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
-import { PerformanceEvaluationRequestDto } from './performance.dto'
-import { ApiTags } from '@nestjs/swagger'
 
 @Controller('performance')
 @ApiTags('Performance')
