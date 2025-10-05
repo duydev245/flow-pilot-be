@@ -25,4 +25,11 @@ export class FocusLogRepository {
   async delete(id: number) {
     return this.prisma.dailyFocusLog.delete({ where: { id } });
   }
+
+  async findByUserId(userId: string) {
+    return this.prisma.dailyFocusLog.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: 'desc' },
+    });
+  }
 }

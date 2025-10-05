@@ -47,10 +47,10 @@ export class UserController {
   @ZodSerializerDto(MessageResDTO)
   updateProfile(
     @GetUserId() userId: string,
-    @UploadedFile() avatar: Express.Multer.File,
     @Body() body: UserUpdateProfileBodyDto,
+    @UploadedFile() avatar?: Express.Multer.File,
   ) {
-    return this.userService.updateProfile(avatar, userId, body)
+    return this.userService.updateProfile(userId, body, avatar)
   }
 
   // Super admin routes
@@ -118,7 +118,7 @@ export class UserController {
 
   // Admin routes
   @Get('/admin')
-  @Roles([RoleName.Admin,RoleName.ProjectManager])
+  @Roles([RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   getAllUsersByAdmin(
@@ -131,7 +131,7 @@ export class UserController {
   }
 
   @Get('/admin/:id')
-  @Roles([RoleName.Admin,RoleName.ProjectManager])
+  @Roles([RoleName.Admin])
   @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
   @ZodSerializerDto(MessageResDTO)
   getUserById(@Param('id') userId: string, @GetWorkSpaceId() workspaceId: string) {
@@ -139,7 +139,7 @@ export class UserController {
   }
 
   @Post('/admin/create')
-  @Roles([RoleName.Admin,RoleName.ProjectManager])
+  @Roles([RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   createUserByAdmin(
@@ -150,7 +150,7 @@ export class UserController {
   }
 
   @Delete('/admin/delete/:id')
-  @Roles([RoleName.Admin,RoleName.ProjectManager])
+  @Roles([RoleName.Admin])
   @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
   @ZodSerializerDto(MessageResDTO)
   deleteUserByAdmin(

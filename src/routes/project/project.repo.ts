@@ -49,11 +49,59 @@ export class ProjectRepository {
   }
 
   async getProjectByIdSuperAdmin(id: string) {
-    return this.prismaService.project.findUnique({ where: { id } })
+    return this.prismaService.project.findUnique({
+      where: { id },
+      include: {
+        members: {
+          select: {
+            id: true,
+            role: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+                role: {
+                  select: { role: true },
+                },
+                department: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
   }
 
   async getProjectById(id: string, workspaceId: string) {
-    return this.prismaService.project.findUnique({ where: { id, workspace_id: workspaceId } })
+    return this.prismaService.project.findFirst({
+      where: { id, workspace_id: workspaceId },
+      include: {
+        members: {
+          select: {
+            id: true,
+            role: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                avatar_url: true,
+                role: {
+                  select: { role: true },
+                },
+                department: {
+                  select: { id: true, name: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
   }
 
   async updateProjectBySuperAdmin(id: string, body: UpdateProjectByAdminType) {
