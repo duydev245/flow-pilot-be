@@ -94,3 +94,127 @@ export const ErrorReductionResponseSchema = z.object({
   totalTasksCurrentPeriod: z.number(),
   totalTasksPreviousPeriod: z.number(),
 })
+
+// Aggregate schemas for all employees and projects
+
+// Schema for average employee metrics
+export const AverageEmployeeMetricsSchema = z.object({
+  period: z.string(),
+  projectId: z.string().optional(),
+  totalEmployees: z.number(),
+  averageCompletionRate: z.number().optional(),
+  averageAdherenceRate: z.number().optional(),
+  averageComplianceRate: z.number().optional(),
+  averageCompletionTimeHours: z.number().optional(),
+  averageThroughput: z.number().optional(),
+  totalThroughput: z.number().optional(),
+  averageReductionRate: z.number().optional(),
+  individualRates: z.array(z.object({
+    employeeId: z.string(),
+    employeeName: z.string(),
+    completionRate: z.number().optional(),
+    adherenceRate: z.number().optional(),
+    complianceRate: z.number().optional(),
+    averageCompletionTimeHours: z.number().optional(),
+    throughput: z.number().optional(),
+    reductionRate: z.number().optional(),
+  })).optional(),
+})
+
+// Schema for project statistics
+export const ProjectStatsSchema = z.object({
+  period: z.string(),
+  totalProjects: z.number(),
+  totalProjectTasks: z.number(),
+  totalCompletedTasks: z.number(),
+  overallCompletionRate: z.number(),
+  projectStats: z.array(z.object({
+    projectId: z.string(),
+    projectName: z.string(),
+    totalTasks: z.number(),
+    completedTasks: z.number(),
+    completionRate: z.number(),
+    status: z.string(),
+    process: z.number(),
+  })),
+})
+
+// Schema for project overview aggregate
+export const ProjectOverviewAggregateSchema = z.object({
+  period: z.string(),
+  totalProjects: z.number(),
+  aggregateMetrics: z.object({
+    totalTasks: z.number(),
+    totalCompleted: z.number(),
+    totalOverdue: z.number(),
+    totalInProgress: z.number(),
+    averageCompletionRate: z.number(),
+  }),
+  projectOverviews: z.array(z.object({
+    projectId: z.string(),
+    projectName: z.string(),
+    overview: z.any(),
+  })),
+})
+
+// Schema for project KPI aggregate
+export const ProjectKpiAggregateSchema = z.object({
+  period: z.string(),
+  totalProjects: z.number(),
+  aggregateKpi: z.object({
+    totalKpiValue: z.number(),
+    averageProcess: z.number(),
+    averageCompletionRate: z.number(),
+  }),
+  projectKpis: z.array(z.object({
+    projectId: z.string(),
+    projectName: z.string(),
+    kpi: z.any(),
+  })),
+})
+
+// Schema for organization AI analysis
+export const OrganizationAiAnalysisSchema = z.object({
+  period: z.string(),
+  totalProjects: z.number(),
+  totalEmployees: z.number(),
+  organizationSummary: z.string(),
+  aggregateMetrics: z.object({
+    totalCompleted: z.number(),
+    totalDelay: z.number(),
+    avgBurnout: z.number(),
+    avgQuality: z.number(),
+  }),
+})
+
+// Schema for organization performance summary
+export const OrganizationPerformanceSummarySchema = z.object({
+  period: z.string(),
+  summary: z.object({
+    projects: z.object({
+      total: z.number(),
+      overallCompletionRate: z.number(),
+      totalTasks: z.number(),
+      completedTasks: z.number(),
+    }),
+    employees: z.object({
+      total: z.number(),
+      averageCompletionRate: z.number(),
+      averageDeadlineAdherence: z.number(),
+      totalThroughput: z.number(),
+    }),
+    kpi: z.object({
+      totalKpiValue: z.number(),
+      averageProcess: z.number(),
+    }),
+  }),
+  detailedData: z.object({
+    projectsStats: z.any(),
+    projectsOverview: z.any(),
+    employeeMetrics: z.object({
+      taskCompletion: z.any(),
+      deadlineAdherence: z.any(),
+      throughput: z.any(),
+    }),
+  }),
+})

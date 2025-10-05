@@ -118,7 +118,7 @@ export class UserController {
 
   // Admin routes
   @Get('/admin')
-  @Roles([RoleName.Admin])
+  @Roles([RoleName.Admin,RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   getAllUsersByAdmin(
@@ -131,7 +131,7 @@ export class UserController {
   }
 
   @Get('/admin/:id')
-  @Roles([RoleName.Admin])
+  @Roles([RoleName.Admin,RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
   @ZodSerializerDto(MessageResDTO)
   getUserById(@Param('id') userId: string, @GetWorkSpaceId() workspaceId: string) {
@@ -139,7 +139,7 @@ export class UserController {
   }
 
   @Post('/admin/create')
-  @Roles([RoleName.Admin])
+  @Roles([RoleName.Admin,RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   createUserByAdmin(
@@ -150,7 +150,7 @@ export class UserController {
   }
 
   @Delete('/admin/delete/:id')
-  @Roles([RoleName.Admin])
+  @Roles([RoleName.Admin,RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
   @ZodSerializerDto(MessageResDTO)
   deleteUserByAdmin(
@@ -171,7 +171,7 @@ export class UserController {
   }
 
   @Put('/admin/:id')
-  @Roles([RoleName.Admin])
+  @Roles([RoleName.Admin,RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
   @ZodSerializerDto(MessageResDTO)
   updateUser(
