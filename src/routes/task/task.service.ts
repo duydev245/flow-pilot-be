@@ -471,7 +471,7 @@ export class TaskService {
           ? 'Task assigned to user successfully'
           : `Task assigned to ${assignedUserCount} users successfully`
       return SuccessResponse(message)
-    } catch (error) {
+  } catch (error) {
       this.logger.error(error.message)
       throw error
     }
