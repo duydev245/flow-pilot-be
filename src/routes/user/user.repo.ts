@@ -23,9 +23,19 @@ export class UserRepository {
           name: true,
           email: true,
           avatar_url: true,
-          department_id: true,
-          role_id: true,
-          workspace_id: true,
+          role: {
+            select: {
+              id: true,
+              role: true,
+            },
+          },
+          workspace: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          created_at: true,
           status: true,
         },
         skip,
@@ -115,9 +125,19 @@ export class UserRepository {
         address: true,
         bio: true,
         nickname: true,
-        department_id: true,
-        role_id: true,
-        workspace_id: true,
+        role: {
+          select: {
+            id: true,
+            role: true,
+          },
+        },
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        created_at: true,
         status: true,
       },
     })
