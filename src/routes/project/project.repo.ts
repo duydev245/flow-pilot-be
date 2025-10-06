@@ -35,6 +35,11 @@ export class ProjectRepository {
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
+        include: {
+          manager: {
+            select: { id: true, name: true, email: true, avatar_url: true },
+          },
+        },
       }),
       this.prismaService.project.count({ where: { workspace_id: workspaceId } }),
     ])
