@@ -36,3 +36,65 @@ export class ProjectOverviewAggregateDto extends createZodDto(ProjectOverviewAgg
 export class ProjectKpiAggregateDto extends createZodDto(ProjectKpiAggregateSchema) {}
 export class OrganizationAiAnalysisDto extends createZodDto(OrganizationAiAnalysisSchema) {}
 export class OrganizationPerformanceSummaryDto extends createZodDto(OrganizationPerformanceSummarySchema) {}
+
+// Quarterly Tasks Chart DTO
+export class QuarterlyTasksChartQueryDto {
+  projectId?: string
+  year?: string
+}
+
+export class QuarterlyTasksChartResponseDto {
+  quarters: string[]
+  series: {
+    name: string
+    data: number[]
+    color: string
+  }[]
+  summary: {
+    totalTasks: number
+    completedTasks: number
+    ongoingTasks: number
+    notStartedTasks: number
+  }
+}
+
+// Individual Performance Dashboard DTO
+export class IndividualPerformanceDashboardQueryDto {
+  period?: string
+  fromDate?: string
+  toDate?: string
+}
+
+export class IndividualPerformanceDashboardResponseDto {
+  userInfo: {
+    name: string
+    role: string
+    department: string
+    joinDate: Date
+    status: string
+  }
+  stressRate: {
+    categories: string[]
+    series: {
+      name: string
+      data: number[]
+      colors: string[]
+    }[]
+  }
+  workPerformance: {
+    series: {
+      name: string
+      value: number
+      color: string
+    }[]
+  }
+  stressAnalyzing: {
+    categories: string[]
+    series: {
+      name: string
+      data: number[]
+      color: string
+    }[]
+    warning: boolean
+  }
+}

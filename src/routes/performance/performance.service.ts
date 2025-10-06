@@ -1713,4 +1713,117 @@ export class PerformanceService {
       focusHours,
     })
   }
+
+  /**
+   * Lấy dashboard hiệu suất cá nhân chi tiết
+   * Bao gồm: Stress Rate, Work Performance (pie chart), Stress Analysis (trend)
+   */
+  async getIndividualPerformanceDashboard(userId: string, dto: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = dto
+
+    // Parallel fetch data for all dashboard components
+    const [stressRateData, workPerformanceData, stressAnalysisData, userInfo] = await Promise.all([
+      this.performanceRepository.getStressRateByDifficulty(userId, { period, fromDate, toDate }),
+      this.performanceRepository.getWorkPerformanceBreakdown(userId, { period, fromDate, toDate }),
+      this.performanceRepository.getStressAnalysisTrend(userId, { period, fromDate, toDate }),
+      this.performanceRepository.getUserInfo(userId)
+    ])
+
+    // Format stress rate data (bar chart)
+    const stressRate = {
+      categories: ['Difficult Task', 'Easy Task', 'Medium Task'],
+      series: [{
+        name: 'Stress Level',
+        data: [
+          stressRateData.difficultTasks || 0,
+          stressRateData.easyTasks || 0,
+          stressRateData.mediumTasks || 0
+        ],
+        colors: ['#FF6B6B', '#4ECDC4', '#FFE66D']
+      }]
+    }
+
+    // Format work performance data (pie chart) - use meaningful labels
+    const workPerformance = {
+      series: [
+        { name: 'Completed', value: workPerformanceData.segment1 || 0, color: '#8B5CF6' },
+        { name: 'In Progress', value: workPerformanceData.segment2 || 0, color: '#EC4899' },
+        { name: 'In Review', value: workPerformanceData.segment3 || 0, color: '#10B981' },
+        { name: 'Other', value: workPerformanceData.segment4 || 0, color: '#F59E0B' }
+      ]
+    }
+
+    // Format stress analysis trend (line chart) - use clear metric names
+    const stressAnalyzing = {
+      categories: stressAnalysisData.map(item => item.period),
+      series: [
+        {
+          name: 'Burnout Index (%)',
+          data: stressAnalysisData.map(item => item.metric1 || 0),
+          color: '#8B5CF6'
+        },
+        {
+          name: 'Quality Score (%)', 
+          data: stressAnalysisData.map(item => item.metric2 || 0),
+          color: '#EC4899'
+        }
+      ],
+      warning: stressAnalysisData.length > 0 && stressAnalysisData[stressAnalysisData.length - 1].metric1 > 70
+    }
+
+    return SuccessResponse('Get individual performance dashboard successfully', {
+      userInfo: {
+        name: userInfo?.name || 'Unknown',
+        role: userInfo?.role?.role || 'Software Engineer',
+        department: userInfo?.department?.name || 'Product Department',
+        joinDate: userInfo?.created_at || new Date(),
+        status: 'Active'
+      },
+      stressRate,
+      workPerformance,
+      stressAnalyzing
+    })
+  }
+
+  /**
+   * Lấy thống kê nhiệm vụ theo quý cho biểu đồ
+   * Trả về dữ liệu cho biểu đồ cột theo 4 quý với các trạng thái: Completed, On-going, Not started
+   */
+  async getQuarterlyTasksChart(dto: { projectId?: string; year?: string }) {
+    const { projectId, year } = dto
+    const currentYear = year || new Date().getFullYear().toString()
+
+    // Lấy dữ liệu thống kê nhiệm vụ theo từng quý
+    const quarterlyData = await this.performanceRepository.getQuarterlyTasksStats(projectId, currentYear)
+
+    // Format dữ liệu cho biểu đồ
+    const chartData = {
+      quarters: ['Q1', 'Q2', 'Q3', 'Q4'],
+      series: [
+        {
+          name: 'Completed',
+          data: quarterlyData.map(q => q.completed || 0),
+          color: '#2196F3' // Blue
+        },
+        {
+          name: 'On-going', 
+          data: quarterlyData.map(q => q.ongoing || 0),
+          color: '#4CAF50' // Green
+        },
+        {
+          name: 'Not started',
+          data: quarterlyData.map(q => q.notStarted || 0),
+          color: '#FF9800' // Orange
+        }
+      ],
+      summary: {
+        totalTasks: quarterlyData.reduce((sum, q) => sum + (q.completed || 0) + (q.ongoing || 0) + (q.notStarted || 0), 0),
+        completedTasks: quarterlyData.reduce((sum, q) => sum + (q.completed || 0), 0),
+        ongoingTasks: quarterlyData.reduce((sum, q) => sum + (q.ongoing || 0), 0),
+        notStartedTasks: quarterlyData.reduce((sum, q) => sum + (q.notStarted || 0), 0)
+      }
+    }
+
+    return SuccessResponse('Get quarterly tasks chart successfully', chartData)
+  }
 }
