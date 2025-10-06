@@ -13,7 +13,7 @@ export class PackageRepository {
   }
   async getAllPackages({ page, limit }: { page: number; limit: number }) {
     const skip = (page - 1) * limit
-    const [data, total] = await Promise.all([
+    const [packages, total] = await Promise.all([
       this.prismaService.package.findMany({
         skip,
         take: limit,
@@ -31,11 +31,17 @@ export class PackageRepository {
         },
       }),
     ])
+
+    const data = packages.map((pkg) => ({
+      ...pkg,
+      features: pkg.features.map((pf) => pf.feature),
+    }))
+
     return { data, total, page, limit }
   }
   async getAllPackagesBySuperAdmin({ page, limit }: { page: number; limit: number }) {
     const skip = (page - 1) * limit
-    const [data, total] = await Promise.all([
+    const [packages, total] = await Promise.all([
       this.prismaService.package.findMany({
         skip,
         take: limit,
@@ -46,12 +52,23 @@ export class PackageRepository {
           },
         },
       }),
-      this.prismaService.package.count({}),
+      this.prismaService.package.count({
+        where: {
+          status: PackageStatus.active,
+        },
+      }),
     ])
+
+    // Transform data to return array of features directly
+    const data = packages.map((pkg) => ({
+      ...pkg,
+      features: pkg.features.map((pf) => pf.feature),
+    }))
+
     return { data, total, page, limit }
   }
   async getPackageById(packageId: string) {
-    return await this.prismaService.package.findUnique({
+    const pkg = await this.prismaService.package.findUnique({
       where: {
         id: packageId,
       },
@@ -61,6 +78,14 @@ export class PackageRepository {
         },
       },
     })
+
+    if (!pkg) return null
+
+    // Transform data to return array of features directly
+    return {
+      ...pkg,
+      features: pkg.features.map((pf) => pf.feature),
+    }
   }
   async createPackage(body: PackageCreateType) {
     const { featureIds, ...packageData } = body
@@ -81,7 +106,7 @@ export class PackageRepository {
       })
     }
 
-    return await this.prismaService.package.findUnique({
+    const pkg = await this.prismaService.package.findUnique({
       where: { id: createdPackage.id },
       include: {
         features: {
@@ -89,6 +114,14 @@ export class PackageRepository {
         },
       },
     })
+
+    if (!pkg) return null
+
+    // Transform data to return array of features directly
+    return {
+      ...pkg,
+      features: pkg.features.map((pf) => pf.feature),
+    }
   }
 
   async updatePackage(packageId: string, body: PackageUpdateType) {
@@ -129,7 +162,7 @@ export class PackageRepository {
     }
 
     // Trả về package đã cập nhật kèm danh sách features liên kết
-    return await this.prismaService.package.findUnique({
+    const pkg = await this.prismaService.package.findUnique({
       where: { id: packageId },
       include: {
         features: {
@@ -137,6 +170,14 @@ export class PackageRepository {
         },
       },
     })
+
+    if (!pkg) return null
+
+    // Transform data to return array of features directly
+    return {
+      ...pkg,
+      features: pkg.features.map((pf) => pf.feature),
+    }
   }
 
   async deletePackage(packageId: string) {
