@@ -27,7 +27,6 @@ export class FeatureRepository {
       data: {
         ...body,
         status: FeatureStatus.active,
-        package_id: body.package_id,
       },
     })
   }

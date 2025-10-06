@@ -19,6 +19,8 @@ export class PackageController {
     return this.packageService.getAllPackages({ page: Number(page), limit: Number(limit) })
   }
   @Get('/superadmin')
+  @Roles([RoleName.SuperAdmin])
+  @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   getAllPackagesBySuperAdmin(@Query('page') page: number = 1, @Query('limit') limit: number = 10) {
     return this.packageService.getAllPackagesBySuperAdmin({ page: Number(page), limit: Number(limit) })
