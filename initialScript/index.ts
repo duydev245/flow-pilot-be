@@ -64,17 +64,32 @@ const main = async () => {
   ]
 
   for (const f of teamFeatures) {
-    const feature = await prisma.feature.create({
-      data: {
-        id: generateUuid(),
-        name: f.name,
-        description: f.description,
-        status: 'active',
-      },
+    // Check if feature exists first
+    let feature = await prisma.feature.findFirst({
+      where: { name: f.name }
     })
 
-    await prisma.packageFeature.create({
-      data: {
+    if (!feature) {
+      feature = await prisma.feature.create({
+        data: {
+          id: generateUuid(),
+          name: f.name,
+          description: f.description,
+          status: 'active',
+        },
+      })
+    }
+
+    // Use upsert for PackageFeature to avoid duplicates
+    await prisma.packageFeature.upsert({
+      where: { 
+        package_id_feature_id: {
+          package_id: pkgTeam.id,
+          feature_id: feature.id,
+        }
+      },
+      update: {},
+      create: {
         id: generateUuid(),
         package_id: pkgTeam.id,
         feature_id: feature.id,
@@ -94,17 +109,32 @@ const main = async () => {
   ]
 
   for (const f of growthFeatures) {
-    const feature = await prisma.feature.create({
-      data: {
-        id: generateUuid(),
-        name: f.name,
-        description: f.description,
-        status: 'active',
-      },
+    // Check if feature exists first
+    let feature = await prisma.feature.findFirst({
+      where: { name: f.name }
     })
 
-    await prisma.packageFeature.create({
-      data: {
+    if (!feature) {
+      feature = await prisma.feature.create({
+        data: {
+          id: generateUuid(),
+          name: f.name,
+          description: f.description,
+          status: 'active',
+        },
+      })
+    }
+
+    // Use upsert for PackageFeature to avoid duplicates
+    await prisma.packageFeature.upsert({
+      where: { 
+        package_id_feature_id: {
+          package_id: pkgGrowth.id,
+          feature_id: feature.id,
+        }
+      },
+      update: {},
+      create: {
         id: generateUuid(),
         package_id: pkgGrowth.id,
         feature_id: feature.id,
@@ -123,17 +153,32 @@ const main = async () => {
   ]
 
   for (const f of enterpriseFeatures) {
-    const feature = await prisma.feature.create({
-      data: {
-        id: generateUuid(),
-        name: f.name,
-        description: f.description,
-        status: 'active',
-      },
+    // Check if feature exists first
+    let feature = await prisma.feature.findFirst({
+      where: { name: f.name }
     })
 
-    await prisma.packageFeature.create({
-      data: {
+    if (!feature) {
+      feature = await prisma.feature.create({
+        data: {
+          id: generateUuid(),
+          name: f.name,
+          description: f.description,
+          status: 'active',
+        },
+      })
+    }
+
+    // Use upsert for PackageFeature to avoid duplicates
+    await prisma.packageFeature.upsert({
+      where: { 
+        package_id_feature_id: {
+          package_id: pkgEnterprise.id,
+          feature_id: feature.id,
+        }
+      },
+      update: {},
+      create: {
         id: generateUuid(),
         package_id: pkgEnterprise.id,
         feature_id: feature.id,
