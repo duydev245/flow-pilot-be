@@ -31,7 +31,6 @@ export const TaskIdSchema = taskSchema.pick({
 })
 export const CreateTaskReviewSchema = TaskReviewSchema.pick({
   task_id: true,
-  reviewer_id: true,
   task_owner_id: true,
   quality_score: true,
   notes: true,
@@ -69,7 +68,6 @@ export const UpdateTaskContentSchema = taskContentSchema
 
 export const CreateTaskRejectionHistorySchema = TaskRejectionHistorySchema.pick({
   task_id: true,
-  rejected_by: true,
   reason: true,
   notes: true,
 })

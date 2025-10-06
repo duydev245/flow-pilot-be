@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { TaskStatus } from 'src/shared/constants/task.constant'
+import { ProjectStatus } from '@prisma/client'
 import {
   CreateTaskType,
   CreateTaskContentType,
@@ -223,7 +224,7 @@ export class TaskRepository {
     })
   }
 
-  async createTaskReview(data: CreateTaskReviewType) {
+  async createTaskReview(data: CreateTaskReviewType & { reviewer_id: string }) {
     return this.prismaService.taskReview.create({ data })
   }
 
@@ -290,7 +291,7 @@ export class TaskRepository {
     })
   }
 
-  async createTaskRejectionHistory(data: CreateRejectHistoryType) {
+  async createTaskRejectionHistory(data: CreateRejectHistoryType & { rejected_by: string }) {
     return this.prismaService.taskRejectionHistory.create({ data })
   }
 
@@ -476,6 +477,20 @@ export class TaskRepository {
   async getTaskContentById(id: number) {
     return this.prismaService.taskContent.findUnique({
       where: { id },
+    })
+  }
+
+  async getTasksByProjectId(projectId: string) {
+    return this.prismaService.task.findMany({
+      where: { project_id: projectId },
+      select: { id: true, status: true },
+    })
+  }
+
+  async updateProjectStatus(projectId: string, status: ProjectStatus) {
+    return this.prismaService.project.update({
+      where: { id: projectId },
+      data: { status },
     })
   }
 }
