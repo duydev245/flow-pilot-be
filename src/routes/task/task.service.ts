@@ -233,6 +233,17 @@ export class TaskService {
       const task = await this.taskRepository.getTaskById(body.task_id)
       if (!task) throw GetTaskFail
 
+      // 2.1 Nếu task chưa bị rejected, chuyển sang trạng thái feedbacked
+      // (Chỉ không ghi đè nếu task đã rejected)
+      if (task.status !== TaskStatus.rejected) {
+        try {
+          await this.taskRepository.updateTask(body.task_id, { status: TaskStatus.feedbacked })
+        } catch (e) {
+          // Không throw để không làm gián đoạn flow chính nếu update status thất bại
+          this.logger.warn(`Failed to update task status to feedbacked for task ${body.task_id}: ${e.message}`)
+        }
+      }
+
       // 3. Lấy toàn bộ review của user này cho project (PerformanceData)
       const userProjectReviews = await this.taskRepository.getUserProjectReviews({
         user_id: userId,
