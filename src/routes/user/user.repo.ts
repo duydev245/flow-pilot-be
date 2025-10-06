@@ -7,7 +7,7 @@ import { PrismaService } from 'src/shared/services/prisma.service'
 
 @Injectable()
 export class UserRepository {
-  constructor(private readonly prismaService: PrismaService) { }
+  constructor(private readonly prismaService: PrismaService) {}
 
   async getAllUsers(actorId: string, page: number, limit: number) {
     const skip = (page - 1) * limit
@@ -23,9 +23,19 @@ export class UserRepository {
           name: true,
           email: true,
           avatar_url: true,
-          department_id: true,
-          role_id: true,
-          workspace_id: true,
+          role: {
+            select: {
+              id: true,
+              role: true,
+            },
+          },
+          workspace: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          created_at: true,
           status: true,
         },
         skip,
@@ -115,9 +125,19 @@ export class UserRepository {
         address: true,
         bio: true,
         nickname: true,
-        department_id: true,
-        role_id: true,
-        workspace_id: true,
+        role: {
+          select: {
+            id: true,
+            role: true,
+          },
+        },
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        created_at: true,
         status: true,
       },
     })
@@ -183,6 +203,25 @@ export class UserRepository {
         department_id: true,
         role_id: true,
         workspace_id: true,
+        status: true,
+      },
+    })
+  }
+
+  getAllManagers(workspaceId: string) {
+    return this.prismaService.user.findMany({
+      where: {
+        workspace_id: workspaceId,
+        role_id: {
+          in: [RoleNameId.ProjectManager],
+        },
+        status: UserStatus.active,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar_url: true,
         status: true,
       },
     })

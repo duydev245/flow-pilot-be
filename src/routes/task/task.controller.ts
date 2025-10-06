@@ -106,16 +106,16 @@ export class TaskController {
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  createTaskReview(@Body() body: CreateTaskReviewDto) {
-    return this.taskService.createTaskReviewAndCaculatePerformance(body)
+  createTaskReview(@Body() body: CreateTaskReviewDto, @GetUserId() userId: string) {
+    return this.taskService.createTaskReviewAndCaculatePerformance(body, userId)
   }
 
   @Post('reject-task')
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  rejectTask(@Body() body: CreateTaskRejectBodyDto) {
-    return this.taskService.rejectTaskAndCaculatePerformance(body)
+  rejectTask(@Body() body: CreateTaskRejectBodyDto, @GetUserId() userId: string) {
+    return this.taskService.rejectTaskAndCaculatePerformance(body, userId)
   }
 
   @Put('update/:id')
