@@ -125,10 +125,8 @@ export class PackageRepository {
   }
 
   async updatePackage(packageId: string, body: PackageUpdateType) {
-    // Tách featureIds ra khỏi body, phần còn lại là dữ liệu package
     const { featureIds, ...packageData } = body
 
-    // Cập nhật thông tin cơ bản của package (name, price, etc.)
     const updatedPackage = await this.prismaService.package.update({
       where: { id: packageId },
       data: {
@@ -137,21 +135,13 @@ export class PackageRepository {
       },
     })
 
-    // Nếu featureIds được cung cấp, thêm mới các liên kết features (append, không ghi đè)
     if (featureIds !== undefined) {
-      // Lấy danh sách feature_id đã liên kết với package này
-      const existingFeatures = await this.prismaService.packageFeature.findMany({
+      await this.prismaService.packageFeature.deleteMany({
         where: { package_id: packageId },
-        select: { feature_id: true },
       })
-      const existingFeatureIds = existingFeatures.map((f) => f.feature_id)
 
-      // Lọc ra những featureIds mới mà chưa liên kết (tránh duplicate)
-      const newFeatureIds = featureIds.filter((id) => !existingFeatureIds.includes(id))
-
-      // Tạo bản ghi PackageFeature mới cho các features chưa có
-      if (newFeatureIds.length > 0) {
-        const packageFeatures = newFeatureIds.map((featureId) => ({
+      if (featureIds.length > 0) {
+        const packageFeatures = featureIds.map((featureId) => ({
           package_id: packageId,
           feature_id: featureId,
         }))
@@ -161,7 +151,6 @@ export class PackageRepository {
       }
     }
 
-    // Trả về package đã cập nhật kèm danh sách features liên kết
     const pkg = await this.prismaService.package.findUnique({
       where: { id: packageId },
       include: {
@@ -173,7 +162,6 @@ export class PackageRepository {
 
     if (!pkg) return null
 
-    // Transform data to return array of features directly
     return {
       ...pkg,
       features: pkg.features.map((pf) => pf.feature),
