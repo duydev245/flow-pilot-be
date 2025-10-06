@@ -137,21 +137,16 @@ export class PackageRepository {
       },
     })
 
-    // Nếu featureIds được cung cấp, thêm mới các liên kết features (append, không ghi đè)
+    // Nếu featureIds được cung cấp, thay thế hoàn toàn danh sách features
     if (featureIds !== undefined) {
-      // Lấy danh sách feature_id đã liên kết với package này
-      const existingFeatures = await this.prismaService.packageFeature.findMany({
+      // Xóa tất cả các liên kết features hiện tại của package này
+      await this.prismaService.packageFeature.deleteMany({
         where: { package_id: packageId },
-        select: { feature_id: true },
       })
-      const existingFeatureIds = existingFeatures.map((f) => f.feature_id)
 
-      // Lọc ra những featureIds mới mà chưa liên kết (tránh duplicate)
-      const newFeatureIds = featureIds.filter((id) => !existingFeatureIds.includes(id))
-
-      // Tạo bản ghi PackageFeature mới cho các features chưa có
-      if (newFeatureIds.length > 0) {
-        const packageFeatures = newFeatureIds.map((featureId) => ({
+      // Tạo các liên kết features mới nếu có
+      if (featureIds.length > 0) {
+        const packageFeatures = featureIds.map((featureId) => ({
           package_id: packageId,
           feature_id: featureId,
         }))
