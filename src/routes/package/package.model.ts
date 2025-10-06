@@ -17,6 +17,8 @@ export const PackageCreateSchema = PackageSchema.pick({
   price: true,
   description: true,
   status: true,
+}).extend({
+  featureIds: z.array(z.uuid()).optional().default([]),
 })
 
 export const PackageUpdateSchema = PackageCreateSchema.partial()

@@ -27,7 +27,7 @@ model Package {
   status              BinaryStatus
   orders              Order[]
   workspaces          Workspace[]
-  features            Feature[]
+  features            PackageFeature[]
   ConsultationRequest ConsultationRequest[]
 }
 
@@ -35,11 +35,22 @@ model Feature {
   id          String       @id @default(uuid()) @db.Uuid
   name        String
   description String?
-  package_id  String       @db.Uuid
   created_at  DateTime     @default(now())
   updated_at  DateTime?    @updatedAt
   status      BinaryStatus
-  package     Package      @relation(fields: [package_id], references: [id])
+  packages    PackageFeature[]
+}
+
+model PackageFeature {
+  id         String  @id @default(uuid()) @db.Uuid
+  package_id String  @db.Uuid
+  feature_id String  @db.Uuid
+  package    Package @relation(fields: [package_id], references: [id])
+  feature    Feature @relation(fields: [feature_id], references: [id])
+
+  @@unique([package_id, feature_id])
+  @@index([package_id])
+  @@index([feature_id])
 }
 
 model Workspace {

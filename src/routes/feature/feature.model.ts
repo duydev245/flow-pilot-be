@@ -10,7 +10,6 @@ export const FeatureSchema = z.object({
     .date()
     .nullable()
     .default(() => new Date()),
-  package_id: z.uuid(),
   status: z.enum([FeatureStatus.active, FeatureStatus.inactive]).default(FeatureStatus.active),
 })
 
@@ -18,13 +17,11 @@ export const FeatureCreateSchema = FeatureSchema.pick({
   name: true,
   description: true,
   status: true,
-  package_id: true,
 })
 export const FeatureUpdateSchema = FeatureSchema.pick({
   name: true,
   description: true,
   status: true,
-  package_id: true,
 })
 export const FeatureDeleteSchema = z
   .object({
