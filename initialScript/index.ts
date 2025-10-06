@@ -64,13 +64,20 @@ const main = async () => {
   ]
 
   for (const f of teamFeatures) {
-    await prisma.feature.create({
+    const feature = await prisma.feature.create({
       data: {
         id: generateUuid(),
         name: f.name,
         description: f.description,
-        package_id: pkgTeam.id,
         status: 'active',
+      },
+    })
+
+    await prisma.packageFeature.create({
+      data: {
+        id: generateUuid(),
+        package_id: pkgTeam.id,
+        feature_id: feature.id,
       },
     })
   }
@@ -87,13 +94,20 @@ const main = async () => {
   ]
 
   for (const f of growthFeatures) {
-    await prisma.feature.create({
+    const feature = await prisma.feature.create({
       data: {
         id: generateUuid(),
         name: f.name,
         description: f.description,
-        package_id: pkgGrowth.id,
         status: 'active',
+      },
+    })
+
+    await prisma.packageFeature.create({
+      data: {
+        id: generateUuid(),
+        package_id: pkgGrowth.id,
+        feature_id: feature.id,
       },
     })
   }
@@ -109,13 +123,20 @@ const main = async () => {
   ]
 
   for (const f of enterpriseFeatures) {
-    await prisma.feature.create({
+    const feature = await prisma.feature.create({
       data: {
         id: generateUuid(),
         name: f.name,
         description: f.description,
-        package_id: pkgEnterprise.id,
         status: 'active',
+      },
+    })
+
+    await prisma.packageFeature.create({
+      data: {
+        id: generateUuid(),
+        package_id: pkgEnterprise.id,
+        feature_id: feature.id,
       },
     })
   }
