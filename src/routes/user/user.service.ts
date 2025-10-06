@@ -8,7 +8,14 @@ import {
   WorkspaceRequiredError,
   WrongUserIdError,
 } from 'src/routes/user/user.errors'
-import { ActiveUserType, UserCreateByAdminType, UserCreateType, UserUpdateByAdminType, UserUpdateProfileType, UserUpdateType } from 'src/routes/user/user.model'
+import {
+  ActiveUserType,
+  UserCreateByAdminType,
+  UserCreateType,
+  UserUpdateByAdminType,
+  UserUpdateProfileType,
+  UserUpdateType,
+} from 'src/routes/user/user.model'
 import { generateRandomPassword } from 'src/shared/helpers'
 import { UserRepository } from 'src/routes/user/user.repo'
 import { RoleName } from 'src/shared/constants/role.constant'
@@ -37,7 +44,7 @@ function sanitizeFilename(name: string, maxLen = 255) {
   s = s.replace(/\0/g, '')
   // remove control chars by filtering codepoints (avoid problematic regex ranges)
   s = Array.from(s)
-    .filter(ch => {
+    .filter((ch) => {
       const code = ch.charCodeAt(0)
       return code > 31 && code !== 127
     })
@@ -50,7 +57,7 @@ function sanitizeFilename(name: string, maxLen = 255) {
 
 @Injectable()
 export class UserService {
-  private readonly logger = new Logger(UserService.name);
+  private readonly logger = new Logger(UserService.name)
 
   constructor(
     private readonly hashingService: HashingService,
@@ -59,7 +66,7 @@ export class UserService {
     private readonly sharedUserRepository: SharedUserRepository,
     private readonly sharedRoleRepository: SharedRoleRepository,
     private readonly s3: S3StorageService,
-  ) { }
+  ) {}
 
   validateFile(file: Express.Multer.File) {
     if (!file) throw InvalidFile
@@ -78,14 +85,14 @@ export class UserService {
 
   async activeUser(userId: string, body: ActiveUserType) {
     try {
-      const { status } = body;
+      const { status } = body
 
       if (!isUuid(userId)) {
-        throw WrongUserIdError;
+        throw WrongUserIdError
       }
 
       if (!status) {
-        throw MissingStatusError;
+        throw MissingStatusError
       }
 
       await this.sharedUserRepository.update({ id: userId }, { status })
@@ -93,7 +100,7 @@ export class UserService {
       return SuccessResponse('User activated successfully')
     } catch (error) {
       this.logger.error(error.message)
-      throw error;
+      throw error
     }
   }
 
@@ -105,7 +112,7 @@ export class UserService {
       }
 
       if (await this.isSuperAdminAccount(userId)) {
-        throw SuperAdminAccountException;
+        throw SuperAdminAccountException
       }
 
       await this.sharedUserRepository.update({ id: userId }, { status: 'inactive' })
@@ -113,7 +120,7 @@ export class UserService {
       return SuccessResponse('Delete user successful')
     } catch (error) {
       this.logger.error(error.message)
-      throw error;
+      throw error
     }
   }
 
@@ -124,28 +131,28 @@ export class UserService {
 
       return SuccessResponse('Get my profile successful', result)
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
   async updateProfile(userId: string, data: UserUpdateProfileType, avatar?: Express.Multer.File) {
     try {
-      let avatar_url: string | undefined;
+      let avatar_url: string | undefined
 
       if (avatar) {
-        this.validateFile(avatar);
+        this.validateFile(avatar)
         const res = await this.s3.uploadFile(avatar, 'avatars')
         avatar_url = res.url
       }
 
-      const updateData = avatar_url ? { ...data, avatar_url } : { ...data };
+      const updateData = avatar_url ? { ...data, avatar_url } : { ...data }
 
       await this.sharedUserRepository.update({ id: userId }, updateData)
       return SuccessResponse('Update profile successful')
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
@@ -155,8 +162,8 @@ export class UserService {
       const result = await this.userRepository.getAllUsers(actorId, page, pageSize)
       return SuccessResponse('Get all users successful', result)
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
@@ -167,15 +174,15 @@ export class UserService {
       }
 
       if (await this.isSuperAdminAccount(UserId)) {
-        throw SuperAdminAccountException;
+        throw SuperAdminAccountException
       }
 
       const result = await this.userRepository.getUserById(UserId)
 
       return SuccessResponse('Get user by ID successful', result)
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
@@ -184,39 +191,39 @@ export class UserService {
       const { email, name, role_id, workspace_id } = data
 
       if (!workspace_id) {
-        throw WorkspaceRequiredError;
+        throw WorkspaceRequiredError
       }
 
       // Kiểm tra email đã tồn tại chưa
       if (await this.sharedUserRepository.findUnique({ email })) {
-        throw EmailAlreadyExistsError;
+        throw EmailAlreadyExistsError
       }
 
       // Kiểm tra role_id có hợp lệ không
-      const isValidRole = await this.sharedRoleRepository.findUnique({ id: role_id });
+      const isValidRole = await this.sharedRoleRepository.findUnique({ id: role_id })
       if (!isValidRole) {
-        throw UserRoleNotFoundError;
+        throw UserRoleNotFoundError
       }
 
       // Luôn tạo password random, hash rồi truyền vào repo
-      const rawPassword = generateRandomPassword();
-      const hashedPassword = await this.hashingService.hash(rawPassword);
+      const rawPassword = generateRandomPassword()
+      const hashedPassword = await this.hashingService.hash(rawPassword)
 
       // Tạo object mới có password
-      const dataWithPassword = { ...data, password: hashedPassword };
-      await this.userRepository.createUser(dataWithPassword);
+      const dataWithPassword = { ...data, password: hashedPassword }
+      await this.userRepository.createUser(dataWithPassword)
 
       // Có thể gửi mail chứa rawPassword cho user ở đây nếu cần
       await this.emailService.sendNewAccountEmail({
         email,
         name,
         password: rawPassword,
-      });
+      })
 
-      return SuccessResponse('Create user successful');
+      return SuccessResponse('Create user successful')
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
@@ -226,8 +233,8 @@ export class UserService {
 
       return SuccessResponse('Update user successful', result)
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
@@ -237,8 +244,8 @@ export class UserService {
       const result = await this.userRepository.getAllUsersByWorkspaceId(actorId, workspaceId, page, pageSize)
       return SuccessResponse('Get all users successful', result)
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
@@ -251,8 +258,8 @@ export class UserService {
       const result = await this.userRepository.getUserByAdmin({ id: userId, workspace_id: workspaceId })
       return SuccessResponse('Get user by ID successful', result)
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
@@ -262,63 +269,57 @@ export class UserService {
 
       // Kiểm tra email đã tồn tại chưa
       if (await this.sharedUserRepository.findUnique({ email })) {
-        throw EmailAlreadyExistsError;
+        throw EmailAlreadyExistsError
       }
 
       // Kiểm tra role_id có hợp lệ không
-      const isValidRole = await this.sharedRoleRepository.findUnique({ id: role_id });
+      const isValidRole = await this.sharedRoleRepository.findUnique({ id: role_id })
       if (!isValidRole) {
-        throw UserRoleNotFoundError;
+        throw UserRoleNotFoundError
       }
 
       // Kiểm tra quyền tạo user
-      if (
-        isValidRole.role !== RoleName.ProjectManager &&
-        isValidRole.role !== RoleName.Employee
-      ) {
-        throw UserPermissionDeniedError;
+      if (isValidRole.role !== RoleName.ProjectManager && isValidRole.role !== RoleName.Employee) {
+        throw UserPermissionDeniedError
       }
 
       // Luôn tạo password random, hash rồi truyền vào repo
-      const rawPassword = generateRandomPassword();
-      const hashedPassword = await this.hashingService.hash(rawPassword);
+      const rawPassword = generateRandomPassword()
+      const hashedPassword = await this.hashingService.hash(rawPassword)
 
       // Tạo object mới có password
-      const dataWithPassword = { ...data, password: hashedPassword, workspace_id: workspaceId };
-      await this.userRepository.createUser(dataWithPassword);
+      const dataWithPassword = { ...data, password: hashedPassword, workspace_id: workspaceId }
+      await this.userRepository.createUser(dataWithPassword)
 
       // Có thể gửi mail chứa rawPassword cho user ở đây nếu cần
       await this.emailService.sendNewAccountEmail({
         email,
         name,
         password: rawPassword,
-      });
+      })
 
-      return SuccessResponse('Create user successful');
+      return SuccessResponse('Create user successful')
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
 
   async updateUserByAdmin(userId: string, workspaceId: string, data: UserUpdateByAdminType) {
     try {
       if (await this.isSuperAdminAccount(userId)) {
-        throw SuperAdminAccountException;
+        throw SuperAdminAccountException
       }
 
       if (data.role_id) {
-        const isValidRole = await this.sharedRoleRepository.findUnique({ id: data.role_id });
+        const isValidRole = await this.sharedRoleRepository.findUnique({ id: data.role_id })
 
         if (!isValidRole) {
-          throw UserRoleNotFoundError;
+          throw UserRoleNotFoundError
         }
 
-        if (
-          isValidRole.role !== RoleName.ProjectManager &&
-          isValidRole.role !== RoleName.Employee
-        ) {
-          throw UserPermissionDeniedError;
+        if (isValidRole.role !== RoleName.ProjectManager && isValidRole.role !== RoleName.Employee) {
+          throw UserPermissionDeniedError
         }
       }
 
@@ -326,9 +327,20 @@ export class UserService {
 
       return SuccessResponse('Update user successful', result)
     } catch (error) {
-      this.logger.error(error.message);
-      throw error;
+      this.logger.error(error.message)
+      throw error
     }
   }
-
+  async getAllManagerByWorkspace(workspaceId: string) {
+    try {
+      if (!workspaceId) {
+        throw WorkspaceRequiredError
+      }
+      const result = await this.userRepository.getAllManagers(workspaceId)
+      return SuccessResponse('Get all managers successful', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
 }

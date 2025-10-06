@@ -182,4 +182,13 @@ export class UserController {
     return this.userService.updateUserByAdmin(userId, workspaceId, body)
   }
 
+
+  //Admin || hr
+  @Get('all-manager')
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getAllManager(@GetWorkSpaceId() workspaceId: string) {
+    return this.userService.getAllManagerByWorkspace(workspaceId)
+  }
 }
