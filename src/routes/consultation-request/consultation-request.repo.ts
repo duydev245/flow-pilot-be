@@ -16,6 +16,7 @@ export class ConsultationRequestRepository {
         skip,
         take: limit,
         orderBy: { created_at: 'desc' },
+        include: { package: true },
       }),
       this.prismaService.consultationRequest.count(),
     ])
@@ -23,7 +24,7 @@ export class ConsultationRequestRepository {
   }
 
   async getById(id: number) {
-    return await this.prismaService.consultationRequest.findUnique({ where: { id } })
+    return await this.prismaService.consultationRequest.findUnique({ where: { id }, include: { package: true } })
   }
 
   async findUniqueByMail(email: string) {
