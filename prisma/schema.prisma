@@ -539,7 +539,7 @@ enum ProjectStatus {
   completed
   inactive
 }
-
+ 
 enum TaskStatus {
   todo
   doing

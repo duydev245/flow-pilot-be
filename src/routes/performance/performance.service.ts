@@ -1451,7 +1451,7 @@ export class PerformanceService {
 
     const totalEmployees = allEmployees.length
 
-    // Calculate real Employee Role Distribution based on department/job titles
+    // Calculate real Employee Department Distribution based on user department assignments
     const roleDistribution = this.calculateRoleDistribution(allEmployees)
 
     // Get real Account Status Over Time from user creation/status changes
@@ -1506,27 +1506,15 @@ export class PerformanceService {
   // Helper methods for real data calculation
 
   private calculateRoleDistribution(employees: any[]) {
-    const roleCounts: Record<string, number> = {}
+    const departmentCounts: Record<string, number> = {}
 
-    // Count by department name (since job_title might not exist)
+    // Count users by department name
     employees.forEach((emp) => {
-      const role = emp.department?.name || 'Unknown'
-      roleCounts[role] = (roleCounts[role] || 0) + 1
+      const departmentName = emp.department?.name || 'Unassigned'
+      departmentCounts[departmentName] = (departmentCounts[departmentName] || 0) + 1
     })
 
-    const totalEmployees = employees.length
-
-    // Map department names to our categories (adjust these based on your actual department names)
-    const softwareEngineer =
-      (roleCounts['Engineering'] || 0) + (roleCounts['Development'] || 0) + (roleCounts['IT'] || 0)
-    const productManager = (roleCounts['Product'] || 0) + (roleCounts['Management'] || 0)
-    const designer = (roleCounts['Design'] || 0) + (roleCounts['UX/UI'] || 0)
-
-    return {
-      softwareEngineer,
-      productManager,
-      designer,
-    }
+    return departmentCounts
   }
 
   private async calculateAccountStatusOverTime(start: Date, end: Date) {
