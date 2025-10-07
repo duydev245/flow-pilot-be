@@ -5,7 +5,7 @@ import { ExtendWorkspaceType, WorkspaceCreateType, WorkspaceUpdateType } from '.
 
 @Injectable()
 export class WorkspaceRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   async isExistingWorkspace(workspaceId: string) {
     return await this.prismaService.workspace.findUnique({
@@ -36,17 +36,16 @@ export class WorkspaceRepository {
       where: { id: workspaceId },
       include: {
         package: true,
+        users: true,
+        departments: true,
+        projects: true,
       },
     })
   }
 
-  async createWorkspace(data: WorkspaceCreateType & { expire_date: string }) {
+  async createWorkspace(data: WorkspaceCreateType) {
     return this.prismaService.workspace.create({
-      data: {
-        ...data,
-        start_date: new Date(data.start_date),
-        expire_date: new Date(data.expire_date),
-      },
+      data,
     })
   }
 
@@ -56,6 +55,7 @@ export class WorkspaceRepository {
       data: { ...body, updated_at: new Date() },
     })
   }
+
   async extendWorkspace(workspaceId: string, body: ExtendWorkspaceType & { expire_date: string }) {
     return await this.prismaService.workspace.update({
       where: { id: workspaceId },
