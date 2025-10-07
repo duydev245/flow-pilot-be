@@ -43,7 +43,16 @@ export class TaskRepository {
     await this.markOverdueTasks()
     return this.prismaService.task.findMany({
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         files: {
           select: {
@@ -101,7 +110,16 @@ export class TaskRepository {
     return this.prismaService.task.findUnique({
       where: { id },
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         files: {
           select: {
@@ -170,7 +188,16 @@ export class TaskRepository {
     const created = await this.prismaService.task.create({
       data: dataToCreate,
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
       },
     })
@@ -182,7 +209,16 @@ export class TaskRepository {
       where: { id },
       data,
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
       },
     })
@@ -355,7 +391,16 @@ export class TaskRepository {
     const task = await this.prismaService.task.findUnique({
       where: { id: data.task_id },
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         project: {
           select: {
@@ -394,7 +439,16 @@ export class TaskRepository {
         },
       },
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         files: {
           select: {
