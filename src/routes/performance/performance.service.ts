@@ -466,7 +466,7 @@ export class PerformanceService {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: envConfig.OPENAI_MODEL || 'gpt-4',
+          model: envConfig.OPENAI_MODEL || 'gpt-4o-mini',
           temperature: 0.2,
           messages: [
             { role: 'system', content: 'You are a helpful HR/People Analytics assistant.' },
