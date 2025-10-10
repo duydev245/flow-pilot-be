@@ -1704,17 +1704,20 @@ export class PerformanceService {
 
   /**
    * Lấy dashboard hiệu suất cá nhân chi tiết
-   * Bao gồm: Stress Rate, Work Performance (pie chart), Stress Analysis (trend)
+   * Bao gồm: Stress Rate, Work Performance (pie chart), Stress Analysis (trend), AI Summary
    */
   async getIndividualPerformanceDashboard(userId: string, dto: { period?: string; fromDate?: string; toDate?: string }) {
     const { period = 'monthly', fromDate, toDate } = dto
 
     // Parallel fetch data for all dashboard components
-    const [stressRateData, workPerformanceData, stressAnalysisData, userInfo] = await Promise.all([
+    const [stressRateData, workPerformanceData, stressAnalysisData, userInfo, performanceData, overallPerformance, relatedDocs] = await Promise.all([
       this.performanceRepository.getStressRateByDifficulty(userId, { period, fromDate, toDate }),
       this.performanceRepository.getWorkPerformanceBreakdown(userId, { period, fromDate, toDate }),
       this.performanceRepository.getStressAnalysisTrend(userId, { period, fromDate, toDate }),
-      this.performanceRepository.getUserInfo(userId)
+      this.performanceRepository.getUserInfo(userId),
+      this.performanceRepository.getPerformanceData(userId, { fromDate, toDate }),
+      this.performanceRepository.getOverallPerformance(userId),
+      this.performanceRepository.getRelatedDocuments({ userId, fromDate, toDate })
     ])
 
     // Format stress rate data (bar chart)
@@ -1759,6 +1762,40 @@ export class PerformanceService {
       warning: stressAnalysisData.length > 0 && stressAnalysisData[stressAnalysisData.length - 1].metric1 > 70
     }
 
+    // Calculate metrics for AI analysis
+    const totalCompleted = performanceData.reduce((s, d) => s + (d.task_completed ?? 0), 0)
+    const totalDelay = performanceData.reduce((s, d) => s + (d.task_delay_count ?? 0), 0)
+    const avgBurnout = performanceData.length > 0 ? performanceData.reduce((s, d) => s + (d.burnout_index ?? 0), 0) / performanceData.length : 0
+    const avgQuality = performanceData.length > 0 ? performanceData.reduce((s, d) => s + (d.quality_score ?? 0), 0) / performanceData.length : 0
+    const delayRatio = totalCompleted + totalDelay > 0 ? totalDelay / (totalCompleted + totalDelay) : 0
+
+    // Get AI analysis and summary
+    const aiSummary = await this.callAIApiForSummary(
+      {
+        id: userInfo?.id,
+        name: userInfo?.name ?? '',
+        department: userInfo?.department?.name ?? '',
+        status: userInfo?.status ?? 'Active',
+        created_at: userInfo?.created_at,
+      },
+      overallPerformance,
+      performanceData,
+      envConfig.GPT_API_KEY,
+      {
+        totals: { totalCompleted, totalDelay, avgBurnout, avgQuality, delayRatio },
+      },
+      relatedDocs,
+    )
+
+    // Generate AI insights based on dashboard data
+    const aiInsights = await this.generateDashboardInsights({
+      stressRateData,
+      workPerformanceData,
+      stressAnalysisData,
+      performanceMetrics: { totalCompleted, totalDelay, avgBurnout, avgQuality, delayRatio },
+      userInfo
+    })
+
     return SuccessResponse('Get individual performance dashboard successfully', {
       userInfo: {
         name: userInfo?.name || 'Unknown',
@@ -1769,7 +1806,9 @@ export class PerformanceService {
       },
       stressRate,
       workPerformance,
-      stressAnalyzing
+      stressAnalyzing,
+      aiSummary,
+      aiInsights
     })
   }
 
@@ -1813,5 +1852,201 @@ export class PerformanceService {
     }
 
     return SuccessResponse('Get quarterly tasks chart successfully', chartData)
+  }
+
+  /**
+   * Lấy phân tích AI chi tiết cho cá nhân
+   * Tách riêng endpoint để frontend có thể call riêng phần AI analysis
+   */
+  async getIndividualAIAnalysis(userId: string, dto: { period?: string; fromDate?: string; toDate?: string }) {
+    const { period = 'monthly', fromDate, toDate } = dto
+
+    // Fetch necessary data for AI analysis
+    const [userInfo, performanceData, overallPerformance, relatedDocs, stressRateData, workPerformanceData, stressAnalysisData] = await Promise.all([
+      this.performanceRepository.getUserInfo(userId),
+      this.performanceRepository.getPerformanceData(userId, { fromDate, toDate }),
+      this.performanceRepository.getOverallPerformance(userId),
+      this.performanceRepository.getRelatedDocuments({ userId, fromDate, toDate }),
+      this.performanceRepository.getStressRateByDifficulty(userId, { period, fromDate, toDate }),
+      this.performanceRepository.getWorkPerformanceBreakdown(userId, { period, fromDate, toDate }),
+      this.performanceRepository.getStressAnalysisTrend(userId, { period, fromDate, toDate })
+    ])
+
+    // Calculate metrics for AI analysis
+    const totalCompleted = performanceData.reduce((s, d) => s + (d.task_completed ?? 0), 0)
+    const totalDelay = performanceData.reduce((s, d) => s + (d.task_delay_count ?? 0), 0)
+    const avgBurnout = performanceData.length > 0 ? performanceData.reduce((s, d) => s + (d.burnout_index ?? 0), 0) / performanceData.length : 0
+    const avgQuality = performanceData.length > 0 ? performanceData.reduce((s, d) => s + (d.quality_score ?? 0), 0) / performanceData.length : 0
+    const delayRatio = totalCompleted + totalDelay > 0 ? totalDelay / (totalCompleted + totalDelay) : 0
+
+    // Get AI summary and insights
+    const [aiSummary, aiInsights] = await Promise.all([
+      this.callAIApiForSummary(
+        {
+          id: userInfo?.id,
+          name: userInfo?.name ?? '',
+          department: userInfo?.department?.name ?? '',
+          status: userInfo?.status ?? 'Active',
+          created_at: userInfo?.created_at,
+        },
+        overallPerformance,
+        performanceData,
+        envConfig.GPT_API_KEY,
+        {
+          totals: { totalCompleted, totalDelay, avgBurnout, avgQuality, delayRatio },
+        },
+        relatedDocs,
+      ),
+      this.generateDashboardInsights({
+        stressRateData,
+        workPerformanceData,
+        stressAnalysisData,
+        performanceMetrics: { totalCompleted, totalDelay, avgBurnout, avgQuality, delayRatio },
+        userInfo
+      })
+    ])
+
+    return SuccessResponse('Individual AI analysis completed successfully', {
+      userId,
+      period: dto.period || 'monthly',
+      dateRange: fromDate && toDate ? `${fromDate} to ${toDate}` : undefined,
+      aiSummary,
+      aiInsights,
+      rawMetrics: {
+        totalCompleted,
+        totalDelay,
+        avgBurnout: Math.round(avgBurnout * 100) / 100,
+        avgQuality: Math.round(avgQuality * 100) / 100,
+        delayRatio: Math.round(delayRatio * 100) / 100
+      }
+    })
+  }
+
+  /**
+   * Generate AI insights for dashboard data
+   */
+  private async generateDashboardInsights(data: {
+    stressRateData: any
+    workPerformanceData: any
+    stressAnalysisData: any[]
+    performanceMetrics: {
+      totalCompleted: number
+      totalDelay: number
+      avgBurnout: number
+      avgQuality: number
+      delayRatio: number
+    }
+    userInfo: any
+  }): Promise<{
+    keyInsights: string[]
+    recommendations: string[]
+    riskFactors: string[]
+    performanceScore: number
+  }> {
+    const { stressRateData, workPerformanceData, stressAnalysisData, performanceMetrics, userInfo } = data
+
+    if (!envConfig.GPT_API_KEY) {
+      return {
+        keyInsights: ['Thiếu API key cho GPT. Vui lòng cấu hình GPT_API_KEY.'],
+        recommendations: ['Cấu hình API key để sử dụng tính năng phân tích AI.'],
+        riskFactors: [],
+        performanceScore: 0
+      }
+    }
+
+    // Build comprehensive prompt for AI analysis
+    const prompt = [
+      'Bạn là chuyên gia phân tích hiệu suất làm việc. Phân tích dữ liệu dashboard cá nhân dưới đây và đưa ra insights.',
+      '',
+      '[THÔNG TIN NHÂN VIÊN]',
+      `- Tên: ${userInfo?.name || 'N/A'}`,
+      `- Phòng ban: ${userInfo?.department?.name || 'N/A'}`,
+      `- Vai trò: ${userInfo?.role?.role || 'N/A'}`,
+      '',
+      '[CHỈ SỐ HIỆU SUẤT]',
+      `- Task hoàn thành: ${performanceMetrics.totalCompleted}`,
+      `- Task trễ: ${performanceMetrics.totalDelay}`,
+      `- Tỷ lệ trễ: ${Math.round(performanceMetrics.delayRatio * 100)}%`,
+      `- Burnout trung bình: ${Math.round(performanceMetrics.avgBurnout * 100) / 100}`,
+      `- Quality score trung bình: ${Math.round(performanceMetrics.avgQuality * 100) / 100}`,
+      '',
+      '[MỨC ĐỘ STRESS THEO TASK]',
+      `- Task khó: ${stressRateData.difficultTasks || 0}`,
+      `- Task dễ: ${stressRateData.easyTasks || 0}`,
+      `- Task trung bình: ${stressRateData.mediumTasks || 0}`,
+      '',
+      '[PHÂN BỐ CÔNG VIỆC]',
+      `- Hoàn thành: ${workPerformanceData.segment1 || 0}`,
+      `- Đang làm: ${workPerformanceData.segment2 || 0}`,
+      `- Đang review: ${workPerformanceData.segment3 || 0}`,
+      `- Khác: ${workPerformanceData.segment4 || 0}`,
+      '',
+      '[XU HƯỚNG STRESS (GẦN NHẤT)]',
+      ...stressAnalysisData.slice(-5).map(item => 
+        `- ${item.period}: Burnout ${item.metric1 || 0}%, Quality ${item.metric2 || 0}%`
+      ),
+      '',
+      'Trả về JSON với định dạng:',
+      '{',
+      '  "keyInsights": ["insight1", "insight2", "insight3"], // 3-4 insights quan trọng',
+      '  "recommendations": ["rec1", "rec2", "rec3"], // 3-4 khuyến nghị cải thiện',
+      '  "riskFactors": ["risk1", "risk2"], // 1-2 yếu tố rủi ro nếu có',
+      '  "performanceScore": 85 // điểm tổng thể 0-100',
+      '}',
+      '',
+      'Lưu ý: Chỉ phân tích dựa trên dữ liệu được cung cấp, không suy đoán ngoài dữ liệu.'
+    ].join('\n')
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${envConfig.GPT_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: envConfig.OPENAI_MODEL || 'gpt-4o-mini',
+          temperature: 0.3,
+          messages: [
+            { role: 'system', content: 'You are a helpful HR/Performance Analytics assistant. Always respond with valid JSON.' },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`)
+      }
+
+      const data = await response.json()
+      const aiText = data?.choices?.[0]?.message?.content || '{}'
+      
+      // Try to parse JSON response
+      try {
+        const insights = JSON.parse(aiText)
+        return {
+          keyInsights: insights.keyInsights || ['Không thể phân tích dữ liệu hiện tại.'],
+          recommendations: insights.recommendations || ['Không có khuyến nghị cụ thể.'],
+          riskFactors: insights.riskFactors || [],
+          performanceScore: insights.performanceScore || 0
+        }
+      } catch (parseError) {
+        // Fallback if JSON parsing fails
+        return {
+          keyInsights: [aiText.substring(0, 200) + '...'],
+          recommendations: ['Tiếp tục duy trì hiệu suất làm việc hiện tại.'],
+          riskFactors: [],
+          performanceScore: 75
+        }
+      }
+    } catch (error) {
+      console.error('AI analysis error:', error)
+      return {
+        keyInsights: ['Không thể kết nối với AI để phân tích dữ liệu.'],
+        recommendations: ['Kiểm tra kết nối mạng và thử lại sau.'],
+        riskFactors: [],
+        performanceScore: 0
+      }
+    }
   }
 }
