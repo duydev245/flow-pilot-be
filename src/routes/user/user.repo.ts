@@ -161,6 +161,25 @@ export class UserRepository {
     })
   }
 
+  getUserInfo(userId: string) {
+    return this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatar_url: true,
+        phone: true,
+        address: true,
+        bio: true,
+        nickname: true,
+        status: true,
+      },
+    })
+  }
+
   createUser(data: Pick<UserType, 'name' | 'email' | 'password' | 'role_id' | 'workspace_id'>) {
     return this.prismaService.user.create({
       data: {
