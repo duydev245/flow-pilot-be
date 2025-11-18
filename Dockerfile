@@ -5,7 +5,7 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Install curl for health check (TRƯỚC KHI TẠO USER)
-RUN apk add --no-cache curl
+RUN apk add --no-cache curl openssl
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs
@@ -29,16 +29,6 @@ ENV ADMIN_EMAIL="admin@acme.com"
 ENV MANAGER_EMAIL="hoangduy.study@gmail.com"
 ENV EMPLOYEE_EMAIL="duyhtse182314@fpt.edu.vn"
 
-# Sensitive data - để trống, sẽ được set khi run container
-ENV DATABASE_URL=""
-ENV ACCESS_TOKEN_SECRET=""
-ENV REFRESH_TOKEN_SECRET=""
-ENV SECRET_API_KEY=""
-ENV GENERAL_PASSWORD=""
-ENV RESEND_API_KEY=""
-ENV GPT_API_KEY=""
-ENV OPENAI_MODEL=""
-
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -46,23 +36,29 @@ COPY prisma ./prisma/
 # Install all dependencies first (for build)
 RUN npm ci --include=dev
 
-# Install NestJS CLI globally (đảm bảo có nest command)
+# Install NestJS CLI globally
 RUN npm install -g @nestjs/cli
 
 # Copy source code
 COPY . .
 
-# Create a .env file if it doesn't exist (SAU KHI COPY)
+# Create a .env file if it doesn't exist
 RUN touch .env
 
-# Generate Prisma client
-RUN PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate
+# Set Prisma environment variables for better reliability
+ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+
+# Generate Prisma client with retry logic
+RUN npx prisma generate --skip-validation || \
+  (sleep 5 && npx prisma generate --skip-validation) || \
+  (sleep 10 && npx prisma generate --skip-validation)
 
 # Build the application
 RUN npm run build
 
-# Generate Prisma client again for production
-RUN PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate
+# Prune dev dependencies after build
+RUN npm prune --production
 
 # Change ownership to non-root user
 RUN chown -R nestjs:nodejs /app
