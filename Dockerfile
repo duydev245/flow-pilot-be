@@ -56,13 +56,13 @@ COPY . .
 RUN touch .env
 
 # Generate Prisma client
-RUN npx prisma generate
+RUN PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate
 
 # Build the application
 RUN npm run build
 
 # Generate Prisma client again for production
-RUN npx prisma generate
+RUN PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1 npx prisma generate
 
 # Change ownership to non-root user
 RUN chown -R nestjs:nodejs /app
