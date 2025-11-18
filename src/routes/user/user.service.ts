@@ -136,6 +136,25 @@ export class UserService {
     }
   }
 
+  async getUserInfo(userId: string) {
+    try {
+      if (!isUuid(userId)) {
+        throw WrongUserIdError
+      }
+
+      const result = await this.userRepository.getUserInfo(userId)
+
+      if (!result) {
+        throw WrongUserIdError
+      }
+
+      return SuccessResponse('Get user info successful', result)
+    } catch (error) {
+      this.logger.error(error.message)
+      throw error
+    }
+  }
+
   async updateProfile(userId: string, data: UserUpdateProfileType, avatar?: Express.Multer.File) {
     try {
       let avatar_url: string | undefined

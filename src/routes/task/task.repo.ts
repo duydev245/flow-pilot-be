@@ -17,7 +17,7 @@ import {
 
 @Injectable()
 export class TaskRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   async createTaskContent(data: CreateTaskContentType) {
     return this.prismaService.taskContent.create({ data })
@@ -438,6 +438,14 @@ export class TaskRepository {
           },
         },
       },
+      orderBy: [
+        {
+          priority: 'desc', // high -> medium -> low
+        },
+        {
+          created_at: 'desc', // newest first within same priority
+        },
+      ],
       include: {
         contents: {
           include: {

@@ -36,10 +36,10 @@ import { TaskService } from './task.service'
 @ApiTags('Task Module')
 @ApiBearerAuth('access-token')
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(private readonly taskService: TaskService) { }
 
   @Get()
-  @Roles([RoleName.ProjectManager, RoleName.Admin, RoleName.SuperAdmin])
+  @Roles([RoleName.Employee, RoleName.ProjectManager, RoleName.Admin, RoleName.SuperAdmin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
   getTasks() {
