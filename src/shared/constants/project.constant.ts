@@ -6,3 +6,14 @@ export const ProjectStatus = {
 } as const
 
 export type ProjectStatusType = (typeof ProjectStatus)[keyof typeof ProjectStatus]
+
+export const ProjectRole = {
+  ProjectManager: 'Project Manager',
+  Developer: 'Developer',
+  Designer: 'Designer',
+  Tester: 'Tester',
+  TeamLead: 'Team Lead',
+  Member: 'Member',
+} as const
+
+export type ProjectRoleType = (typeof ProjectRole)[keyof typeof ProjectRole]
