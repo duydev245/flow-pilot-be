@@ -550,7 +550,7 @@ enum TaskStatus {
   overdued
 }
 // Kanban board: todo          | in progress      | completed                          | rejected
-// TaskStatus: todo , overdued | doing , overdued | reviewing , completed, feedbacked | rejected     
+// TaskStatus: todo | doing , overdued | reviewing , completed, feedbacked | rejected     
 enum TaskPriority {
   low
   medium

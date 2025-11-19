@@ -33,7 +33,7 @@ export class TaskRepository {
       where: {
         completed_at: null,
         due_at: { lt: now },
-        status: { not: TaskStatus.overdued },
+        status: { in: [TaskStatus.doing] },
       },
       data: { status: TaskStatus.overdued },
     })
@@ -430,6 +430,7 @@ export class TaskRepository {
   }
 
   async getMyTasks(userId: string) {
+    await this.markOverdueTasks();
     return this.prismaService.task.findMany({
       where: {
         assignees: {
