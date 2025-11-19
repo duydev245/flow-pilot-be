@@ -45,12 +45,12 @@ export class TaskController {
   getTasksByProject(@Param('projectId') projectId: string, @GetUserId() userId: string) {
     return this.taskService.getTasksByProject(projectId, userId)
   }
-  @Get('my-tasks')
-  @Roles([RoleName.ProjectManager, RoleName.Employee, RoleName.Admin, RoleName.SuperAdmin])
+  @Get('my-tasks/:projectId')
+  @Roles([RoleName.ProjectManager, RoleName.Employee])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  getMyTasks(@GetUserId() userId: string) {
-    return this.taskService.getMyTasks(userId)
+  getMyTasks(@Param('projectId') projectId: string, @GetUserId() userId: string) {
+    return this.taskService.getMyTasks(projectId, userId)
   }
 
   @Get('get-all-task-reviews')

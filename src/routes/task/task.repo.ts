@@ -483,9 +483,10 @@ export class TaskRepository {
     }
   }
 
-  async getMyTasks(userId: string) {
+  async getMyTasks( projectId: string, userId: string) {
     const tasks = await this.prismaService.task.findMany({
       where: {
+        project_id: projectId,
         assignees: {
           some: {
             user_id: userId,
@@ -493,6 +494,13 @@ export class TaskRepository {
         },
       },
       include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        },
         contents: {
           include: {
             user: {

@@ -521,9 +521,9 @@ export class TaskService {
       throw error
     }
   }
-  async getMyTasks(userId: string) {
+  async getMyTasks(projectId: string, userId: string) {
     try {
-      const result = await this.taskRepository.getMyTasks(userId)
+      const result = await this.taskRepository.getMyTasks(projectId, userId)
       return SuccessResponse('My Tasks retrieved successfully', result)
     } catch (error) {
       this.logger.error(error.message)
