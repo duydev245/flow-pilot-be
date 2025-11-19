@@ -39,10 +39,27 @@ export class TaskRepository {
     })
   }
 
-  async getAllTasks() {
+  async getTasksByProject(projectId: string, userId: string) {
     await this.markOverdueTasks()
     return this.prismaService.task.findMany({
+      where: {
+        project_id: projectId,
+        project: {
+          members: {
+            some: {
+              user_id: userId
+            }
+          }
+        }
+      },
       include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        },
         contents: {
           include: {
             user: {
@@ -103,6 +120,9 @@ export class TaskRepository {
           },
         },
       },
+      orderBy: {
+        created_at: 'desc'
+      }
     })
   }
 

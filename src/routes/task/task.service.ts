@@ -171,10 +171,10 @@ export class TaskService {
     }
   }
 
-  async getAllTasks() {
+  async getTasksByProject(projectId: string, userId: string) {
     try {
-      const result = await this.taskRepository.getAllTasks()
-      return SuccessResponse('Tasks retrieved successfully', result)
+      const result = await this.taskRepository.getTasksByProject(projectId, userId)
+      return SuccessResponse('Tasks retrieved successfully for project', result)
     } catch (error) {
       this.logger.error(error.message)
       throw error

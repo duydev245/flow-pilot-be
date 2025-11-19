@@ -38,12 +38,12 @@ import { TaskService } from './task.service'
 export class TaskController {
   constructor(private readonly taskService: TaskService) { }
 
-  @Get()
-  @Roles([RoleName.Employee, RoleName.ProjectManager, RoleName.Admin, RoleName.SuperAdmin])
+  @Get('task-by-project/:projectId')
+  @Roles([RoleName.Employee, RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  getTasks() {
-    return this.taskService.getAllTasks()
+  getTasksByProject(@Param('projectId') projectId: string, @GetUserId() userId: string) {
+    return this.taskService.getTasksByProject(projectId, userId)
   }
   @Get('my-tasks')
   @Roles([RoleName.ProjectManager, RoleName.Employee, RoleName.Admin, RoleName.SuperAdmin])
