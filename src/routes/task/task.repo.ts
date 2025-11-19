@@ -239,11 +239,45 @@ export class TaskRepository {
   }
 
   async deleteTask(id: string) {
-    return this.prismaService.task.update({
-      where: { id },
-      data: {
-        status: TaskStatus.rejected,
-      },
+    // Xóa các bản ghi liên quan trước khi xóa task
+    // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+    return this.prismaService.$transaction(async (prisma) => {
+      // 1. Xóa TaskContent
+      await prisma.taskContent.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 2. Xóa TaskChecklist
+      await prisma.taskChecklist.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 3. Xóa TaskUser (assignees)
+      await prisma.taskUser.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 4. Xóa TaskRejectionHistory
+      await prisma.taskRejectionHistory.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 5. Xóa TaskReview (có constraint @unique nên chỉ có 1 bản ghi)
+      await prisma.taskReview.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 6. Cập nhật UploadFile - set task_id = null (vì task_id là nullable)
+      // Hoặc có thể xóa luôn files nếu không cần giữ lại
+      await prisma.uploadFile.updateMany({
+        where: { task_id: id },
+        data: { task_id: null },
+      })
+
+      // 7. Cuối cùng xóa Task
+      return prisma.task.delete({
+        where: { id },
+      })
     })
   }
   async deleteTaskChecklist(id: number) {
@@ -430,8 +464,7 @@ export class TaskRepository {
   }
 
   async getMyTasks(userId: string) {
-    await this.markOverdueTasks();
-    return this.prismaService.task.findMany({
+    const tasks = await this.prismaService.task.findMany({
       where: {
         assignees: {
           some: {
@@ -439,14 +472,6 @@ export class TaskRepository {
           },
         },
       },
-      orderBy: [
-        {
-          priority: 'desc', // high -> medium -> low
-        },
-        {
-          created_at: 'desc', // newest first within same priority
-        },
-      ],
       include: {
         contents: {
           include: {
@@ -509,6 +534,34 @@ export class TaskRepository {
         },
       },
     })
+
+    // Define custom order for status and priority
+    const statusOrder = {
+      [TaskStatus.overdued]: 1,
+      [TaskStatus.doing]: 2,
+      [TaskStatus.todo]: 3,
+      [TaskStatus.reviewing]: 4,
+      [TaskStatus.feedbacked]: 5, // Assuming 'feedback' is 'feedbacked' from schema
+    }
+
+    const priorityOrder = {
+      high: 3,
+      medium: 2,
+      low: 1,
+    }
+
+    // Sort the tasks
+    tasks.sort((a, b) => {
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+      if (statusDiff !== 0) return statusDiff
+
+      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority]
+      if (priorityDiff !== 0) return priorityDiff
+
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+
+    return tasks
   }
 
   async isUserAssignedToTask(taskId: string, userId: string): Promise<boolean> {
