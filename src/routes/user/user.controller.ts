@@ -53,6 +53,14 @@ export class UserController {
     return this.userService.updateProfile(userId, body, avatar)
   }
 
+  @Get('/user-info/:id')
+  @Roles([RoleName.ProjectManager, RoleName.Employee])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getUserInfo(@Param('id') userId: string) {
+    return this.userService.getUserInfo(userId)
+  }
+
   // Super admin routes
   @Get('/super-admin')
   @Roles([RoleName.SuperAdmin])
@@ -171,7 +179,7 @@ export class UserController {
   }
 
   @Put('/admin/:id')
-  @Roles([RoleName.Admin,RoleName.ProjectManager])
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard, ValidUserWorkspaceGuard)
   @ZodSerializerDto(MessageResDTO)
   updateUser(
@@ -181,5 +189,15 @@ export class UserController {
   ) {
     return this.userService.updateUserByAdmin(userId, workspaceId, body)
   }
+
+  //Admin || hr
+  @Get('all-manager')
+  @Roles([RoleName.Admin, RoleName.ProjectManager])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  getAllManager(@GetWorkSpaceId() workspaceId: string) {
+    return this.userService.getAllManagerByWorkspace(workspaceId)
+  }
+
 
 }

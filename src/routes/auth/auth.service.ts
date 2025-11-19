@@ -69,6 +69,18 @@ export class AuthService {
         roleName: user.role.role,
       })
 
+      // determine most recently created project (service side)
+      let projectId: string | null = null
+      const projects = (user as any).projectUsers || []
+      if (projects.length) {
+        projects.sort((a: any, b: any) => {
+          const da = a.project?.created_at ? new Date(a.project.created_at).getTime() : 0
+          const db = b.project?.created_at ? new Date(b.project.created_at).getTime() : 0
+          return db - da
+        })
+        projectId = projects[0].project_id || null
+      }
+
       return SuccessResponse(
         'Login Sucessful',
         {
@@ -76,6 +88,7 @@ export class AuthService {
           refreshToken,
           role: user.role.role.toUpperCase(),
           wsid: user.workspace_id ? user.workspace_id : null,
+          projectId,
           isFirstLogin: user.is_first_login
         }
       )
@@ -123,6 +136,18 @@ export class AuthService {
         throw UserNotFoundException;
       }
 
+      // determine most recently created project (service side)
+      let projectId: string | null = null
+      const projects = (user as any).projectUsers || []
+      if (projects.length) {
+        projects.sort((a: any, b: any) => {
+          const da = a.project?.created_at ? new Date(a.project.created_at).getTime() : 0
+          const db = b.project?.created_at ? new Date(b.project.created_at).getTime() : 0
+          return db - da
+        })
+        projectId = projects[0].project_id || null
+      }
+
       const $deleteRefreshToken = this.authRepository.deleteRefreshToken({
         token
       })
@@ -144,6 +169,7 @@ export class AuthService {
           refreshToken,
           role: user.role.role.toUpperCase(),
           wsid: user.workspace_id ? user.workspace_id : null,
+          projectId,
         }
       )
     } catch (error) {

@@ -8,7 +8,12 @@ import { RefreshTokenType, VerificationCodeType } from './auth.model';
 export class AuthRepository {
   constructor(private readonly prismaService: PrismaService) { }
 
-  async findUniqueUserIncludeRole(where: WhereUniqueUserType): Promise<UserWithRoleType | null> {
+  async findUniqueUserIncludeRole(
+    where: WhereUniqueUserType,
+  ): Promise<
+    | (UserWithRoleType & { projectUsers: { project_id: string; project?: { id: string; name?: string; created_at?: Date } }[] })
+    | null
+  > {
     return await this.prismaService.user.findFirst({
       where: {
         ...where,
@@ -16,6 +21,18 @@ export class AuthRepository {
       },
       include: {
         role: true,
+        projectUsers: {
+          select: {
+            project_id: true,
+            project: {
+              select: {
+                id: true,
+                name: true,
+                created_at: true,
+              },
+            },
+          },
+        },
       },
     })
   }

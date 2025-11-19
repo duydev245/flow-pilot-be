@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'
 import { ZodSerializerDto } from 'nestjs-zod'
 import { RoleName } from 'src/shared/constants/role.constant'
@@ -51,6 +51,14 @@ export class WorkspaceController {
   @ZodSerializerDto(MessageResDTO)
   ExtendWorkspace(@Body() body: ExtendWorkspaceDto, @Param('id') id: string) {
     return this.workspaceService.extendWorkspace(id, body)
+  }
+
+  @Patch('/activate/:id')
+  @UseGuards(AuthRoleGuard)
+  @Roles([RoleName.SuperAdmin])
+  @ZodSerializerDto(MessageResDTO)
+  activateWorkspace(@Param('id') id: string) {
+    return this.workspaceService.activateWorkspace(id)
   }
 
   @Delete('/delete/:id')

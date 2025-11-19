@@ -36,21 +36,21 @@ import { TaskService } from './task.service'
 @ApiTags('Task Module')
 @ApiBearerAuth('access-token')
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(private readonly taskService: TaskService) { }
 
-  @Get()
-  @Roles([RoleName.ProjectManager, RoleName.Admin, RoleName.SuperAdmin])
+  @Get('task-by-project/:projectId')
+  @Roles([RoleName.Employee, RoleName.ProjectManager])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  getTasks() {
-    return this.taskService.getAllTasks()
+  getTasksByProject(@Param('projectId') projectId: string, @GetUserId() userId: string) {
+    return this.taskService.getTasksByProject(projectId, userId)
   }
-  @Get('my-tasks')
-  @Roles([RoleName.ProjectManager, RoleName.Employee, RoleName.Admin, RoleName.SuperAdmin])
+  @Get('my-tasks/:projectId')
+  @Roles([RoleName.ProjectManager, RoleName.Employee])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  getMyTasks(@GetUserId() userId: string) {
-    return this.taskService.getMyTasks(userId)
+  getMyTasks(@Param('projectId') projectId: string, @GetUserId() userId: string) {
+    return this.taskService.getMyTasks(projectId, userId)
   }
 
   @Get('get-all-task-reviews')
@@ -106,16 +106,16 @@ export class TaskController {
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  createTaskReview(@Body() body: CreateTaskReviewDto) {
-    return this.taskService.createTaskReviewAndCaculatePerformance(body)
+  createTaskReview(@Body() body: CreateTaskReviewDto, @GetUserId() userId: string) {
+    return this.taskService.createTaskReviewAndCaculatePerformance(body, userId)
   }
 
   @Post('reject-task')
   @Roles([RoleName.ProjectManager, RoleName.Admin])
   @UseGuards(AuthRoleGuard)
   @ZodSerializerDto(MessageResDTO)
-  rejectTask(@Body() body: CreateTaskRejectBodyDto) {
-    return this.taskService.rejectTaskAndCaculatePerformance(body)
+  rejectTask(@Body() body: CreateTaskRejectBodyDto, @GetUserId() userId: string) {
+    return this.taskService.rejectTaskAndCaculatePerformance(body, userId)
   }
 
   @Put('update/:id')

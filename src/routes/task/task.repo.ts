@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/services/prisma.service'
 import { TaskStatus } from 'src/shared/constants/task.constant'
+import { ProjectStatus } from '@prisma/client'
 import {
   CreateTaskType,
   CreateTaskContentType,
@@ -16,7 +17,7 @@ import {
 
 @Injectable()
 export class TaskRepository {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(private readonly prismaService: PrismaService) { }
 
   async createTaskContent(data: CreateTaskContentType) {
     return this.prismaService.taskContent.create({ data })
@@ -32,17 +33,43 @@ export class TaskRepository {
       where: {
         completed_at: null,
         due_at: { lt: now },
-        status: { not: TaskStatus.overdued },
+        status: { in: [TaskStatus.doing] },
       },
       data: { status: TaskStatus.overdued },
     })
   }
 
-  async getAllTasks() {
+  async getTasksByProject(projectId: string, userId: string) {
     await this.markOverdueTasks()
     return this.prismaService.task.findMany({
+      where: {
+        project_id: projectId,
+        project: {
+          members: {
+            some: {
+              user_id: userId
+            }
+          }
+        }
+      },
       include: {
-        contents: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        },
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         files: {
           select: {
@@ -93,6 +120,9 @@ export class TaskRepository {
           },
         },
       },
+      orderBy: {
+        created_at: 'desc'
+      }
     })
   }
 
@@ -100,7 +130,16 @@ export class TaskRepository {
     return this.prismaService.task.findUnique({
       where: { id },
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         files: {
           select: {
@@ -169,7 +208,16 @@ export class TaskRepository {
     const created = await this.prismaService.task.create({
       data: dataToCreate,
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
       },
     })
@@ -181,7 +229,16 @@ export class TaskRepository {
       where: { id },
       data,
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
       },
     })
@@ -202,11 +259,45 @@ export class TaskRepository {
   }
 
   async deleteTask(id: string) {
-    return this.prismaService.task.update({
-      where: { id },
-      data: {
-        status: TaskStatus.rejected,
-      },
+    // Xóa các bản ghi liên quan trước khi xóa task
+    // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+    return this.prismaService.$transaction(async (prisma) => {
+      // 1. Xóa TaskContent
+      await prisma.taskContent.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 2. Xóa TaskChecklist
+      await prisma.taskChecklist.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 3. Xóa TaskUser (assignees)
+      await prisma.taskUser.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 4. Xóa TaskRejectionHistory
+      await prisma.taskRejectionHistory.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 5. Xóa TaskReview (có constraint @unique nên chỉ có 1 bản ghi)
+      await prisma.taskReview.deleteMany({
+        where: { task_id: id },
+      })
+
+      // 6. Cập nhật UploadFile - set task_id = null (vì task_id là nullable)
+      // Hoặc có thể xóa luôn files nếu không cần giữ lại
+      await prisma.uploadFile.updateMany({
+        where: { task_id: id },
+        data: { task_id: null },
+      })
+
+      // 7. Cuối cùng xóa Task
+      return prisma.task.delete({
+        where: { id },
+      })
     })
   }
   async deleteTaskChecklist(id: number) {
@@ -223,7 +314,7 @@ export class TaskRepository {
     })
   }
 
-  async createTaskReview(data: CreateTaskReviewType) {
+  async createTaskReview(data: CreateTaskReviewType & { reviewer_id: string }) {
     return this.prismaService.taskReview.create({ data })
   }
 
@@ -290,7 +381,7 @@ export class TaskRepository {
     })
   }
 
-  async createTaskRejectionHistory(data: CreateRejectHistoryType) {
+  async createTaskRejectionHistory(data: CreateRejectHistoryType & { rejected_by: string }) {
     return this.prismaService.taskRejectionHistory.create({ data })
   }
 
@@ -354,7 +445,16 @@ export class TaskRepository {
     const task = await this.prismaService.task.findUnique({
       where: { id: data.task_id },
       include: {
-        contents: true,
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         project: {
           select: {
@@ -383,9 +483,10 @@ export class TaskRepository {
     }
   }
 
-  async getMyTasks(userId: string) {
-    return this.prismaService.task.findMany({
+  async getMyTasks( projectId: string, userId: string) {
+    const tasks = await this.prismaService.task.findMany({
       where: {
+        project_id: projectId,
         assignees: {
           some: {
             user_id: userId,
@@ -393,7 +494,23 @@ export class TaskRepository {
         },
       },
       include: {
-        contents: true,
+        project: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        },
+        contents: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
         checklists: true,
         files: {
           select: {
@@ -445,6 +562,34 @@ export class TaskRepository {
         },
       },
     })
+
+    // Define custom order for status and priority
+    const statusOrder = {
+      [TaskStatus.overdued]: 1,
+      [TaskStatus.doing]: 2,
+      [TaskStatus.todo]: 3,
+      [TaskStatus.reviewing]: 4,
+      [TaskStatus.feedbacked]: 5, // Assuming 'feedback' is 'feedbacked' from schema
+    }
+
+    const priorityOrder = {
+      high: 3,
+      medium: 2,
+      low: 1,
+    }
+
+    // Sort the tasks
+    tasks.sort((a, b) => {
+      const statusDiff = statusOrder[a.status] - statusOrder[b.status]
+      if (statusDiff !== 0) return statusDiff
+
+      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority]
+      if (priorityDiff !== 0) return priorityDiff
+
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+
+    return tasks
   }
 
   async isUserAssignedToTask(taskId: string, userId: string): Promise<boolean> {
@@ -476,6 +621,20 @@ export class TaskRepository {
   async getTaskContentById(id: number) {
     return this.prismaService.taskContent.findUnique({
       where: { id },
+    })
+  }
+
+  async getTasksByProjectId(projectId: string) {
+    return this.prismaService.task.findMany({
+      where: { project_id: projectId },
+      select: { id: true, status: true },
+    })
+  }
+
+  async updateProjectStatus(projectId: string, status: ProjectStatus) {
+    return this.prismaService.project.update({
+      where: { id: projectId },
+      data: { status },
     })
   }
 }

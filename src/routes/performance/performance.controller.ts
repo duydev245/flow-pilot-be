@@ -7,6 +7,7 @@ import { RoleName } from 'src/shared/constants/role.constant'
 import { Roles } from 'src/shared/decorators/roles.decorator'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { AuthRoleGuard } from 'src/shared/guards/auth-role.guard'
+import { GetUserId } from 'src/shared/decorators/active-user.decorator'
 
 @Controller('performance')
 @ApiTags('Performance')
@@ -461,9 +462,40 @@ export class PerformanceController {
   }
 
   /**
+   * Lấy phân tích AI chi tiết cho dashboard cá nhân
+   * Quyền: Nhân viên, Quản lý dự án hoặc Admin
+   * Trả về: Phân tích AI với insights, khuyến nghị và điểm hiệu suất
+   */
+  @Get('individual-ai-analysis/:userId')
+  @Roles([RoleName.Employee, RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  async getIndividualAIAnalysis(
+    @Param('userId') userId: string,
+    @Query('period') period: string = 'monthly',
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return await this.performanceService.getIndividualAIAnalysis(userId, { period, fromDate, toDate })
+  }
+
+  /**
+   * Lấy thống kê nhiệm vụ theo quý cho biểu đồ
+   * Quyền: Quản lý dự án hoặc Admin
+   * Trả về: Dữ liệu nhiệm vụ theo từng quý với trạng thái Completed, On-going, Not started
+   */
+  @Get('quarterly-tasks-chart')
+  @Roles([RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  async getQuarterlyTasksChart(@Query('projectId') projectId?: string, @Query('year') year?: string) {
+    return await this.performanceService.getQuarterlyTasksChart({ projectId, year })
+  }
+
+  /**
    * Lấy tổng quan dashboard của người dùng
    * Quyền: Nhân viên, Quản lý dự án hoặc Admin
-   * Trả về: 4 chỉ số chính: số task trong ngày, tỷ lệ hoàn thành, task quá hạn, giờ tập trung
+   * Trả về: 4 chỉ s ố chính: số task trong ngày, tỷ lệ hoàn thành, task quá hạn, giờ tập trung
    */
   @Get('dashboard-summary/:userId')
   @Roles([RoleName.Employee, RoleName.ProjectManager, RoleName.Admin])
@@ -476,5 +508,27 @@ export class PerformanceController {
     @Query('toDate') toDate?: string,
   ) {
     return await this.performanceService.getUserDashboardSummary(userId, { date, fromDate, toDate })
+  }
+
+  /**
+   * Lấy dashboard hiệu suất cá nhân chi tiết
+   * Quyền: Nhân viên, Quản lý dự án hoặc Admin
+   * Trả về: Các biểu đồ hiệu suất cá nhân bao gồm:
+   * - Stress Rate: Biểu đồ cột thể hiện mức độ căng thẳng theo loại task (khó, dễ, trung bình)
+   * - Work Performance: Biểu đồ tròn phân tích tỷ lệ task theo trạng thái (hoàn thành, đang làm, đang review, khác)
+   * - Stress Analysis Trend: Biểu đồ đường xu hướng chỉ số burnout và quality score theo thời gian
+   * - AI Summary: Phân tích và tóm tắt hiệu suất bằng AI
+   */
+  @Get('individual-dashboard/:userId')
+  @Roles([RoleName.Employee, RoleName.ProjectManager, RoleName.Admin])
+  @UseGuards(AuthRoleGuard)
+  @ZodSerializerDto(MessageResDTO)
+  async getIndividualPerformanceDashboard(
+    @Param('userId') userId: string,
+    @Query('period') period: string = 'monthly',
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return await this.performanceService.getIndividualPerformanceDashboard(userId, { period, fromDate, toDate })
   }
 }

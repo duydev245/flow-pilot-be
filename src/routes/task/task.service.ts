@@ -12,7 +12,7 @@ import {
   CreateTaskReviewType,
 } from './task.model'
 import { GetTaskFail, TaskNotFound, UserNotAssignedToTask } from 'src/routes/task/task.errors'
-import { TaskPriority, TaskStatus } from '@prisma/client'
+import { TaskPriority, TaskStatus, ProjectStatus } from '@prisma/client'
 import { InvalidFile, InvalidFileExtension, InvalidFileSize } from 'src/routes/file/file.error'
 import path from 'path'
 import { S3StorageService } from 'src/shared/services/s3-storage.service'
@@ -171,10 +171,10 @@ export class TaskService {
     }
   }
 
-  async getAllTasks() {
+  async getTasksByProject(projectId: string, userId: string) {
     try {
-      const result = await this.taskRepository.getAllTasks()
-      return SuccessResponse('Tasks retrieved successfully', result)
+      const result = await this.taskRepository.getTasksByProject(projectId, userId)
+      return SuccessResponse('Tasks retrieved successfully for project', result)
     } catch (error) {
       this.logger.error(error.message)
       throw error
@@ -221,18 +221,32 @@ export class TaskService {
     }
   }
 
-  async createTaskReviewAndCaculatePerformance(body: CreateTaskReviewType) {
+  async createTaskReviewAndCaculatePerformance(body: CreateTaskReviewType, userId: string) {
     try {
       // 1. Tạo TaskReview (cho phép nhiều reviewer)
-      const review = await this.taskRepository.createTaskReview(body)
+      const review = await this.taskRepository.createTaskReview({
+        ...body,
+        reviewer_id: userId,
+      })
 
       // 2. Lấy thông tin task liên quan
       const task = await this.taskRepository.getTaskById(body.task_id)
       if (!task) throw GetTaskFail
 
+      // 2.1 Nếu task chưa bị rejected, chuyển sang trạng thái feedbacked
+      // (Chỉ không ghi đè nếu task đã rejected)
+      if (task.status !== TaskStatus.rejected) {
+        try {
+          await this.taskRepository.updateTask(body.task_id, { status: TaskStatus.feedbacked })
+        } catch (e) {
+          // Không throw để không làm gián đoạn flow chính nếu update status thất bại
+          this.logger.warn(`Failed to update task status to feedbacked for task ${body.task_id}: ${e.message}`)
+        }
+      }
+
       // 3. Lấy toàn bộ review của user này cho project (PerformanceData)
       const userProjectReviews = await this.taskRepository.getUserProjectReviews({
-        user_id: body.task_owner_id,
+        user_id: userId,
         project_id: task.project_id,
       })
 
@@ -279,6 +293,9 @@ export class TaskService {
         quality_score: avgQualityScoreAll,
       })
 
+      // 7. Kiểm tra và update project status nếu tất cả tasks đã hoàn thành
+      await this.checkAndUpdateProjectStatus(task.project_id)
+
       return SuccessResponse('Task review created and performance updated', review)
     } catch (error) {
       this.logger.error(error.message)
@@ -286,65 +303,76 @@ export class TaskService {
     }
   }
 
-  async rejectTaskAndCaculatePerformance(body: CreateRejectHistoryType) {
+  async rejectTaskAndCaculatePerformance(body: CreateRejectHistoryType, userId: string) {
     try {
       // 1. Lưu vào TaskRejectionHistory
-      const rejection = await this.taskRepository.createTaskRejectionHistory(body)
+      const rejection = await this.taskRepository.createTaskRejectionHistory({
+        ...body,
+        rejected_by: userId,
+      })
 
       // 2. Lấy thông tin task liên quan
       const task = await this.taskRepository.getTaskById(body.task_id)
       if (!task) throw GetTaskFail
 
-      // Cập nhật trạng thái task = rejected
+      // 3. Cập nhật trạng thái task = rejected (kể cả task đã được reviewed/completed)
       await this.taskRepository.updateTask(body.task_id, { status: TaskStatus.rejected })
 
-      // 3. Lấy toàn bộ review của user này cho project (PerformanceData)
-      const userProjectReviews = await this.taskRepository.getUserProjectReviews({
-        user_id: body.rejected_by,
-        project_id: task.project_id,
-      })
+      // Lấy task owner để tính performance
+      const taskOwner = task.assignees && task.assignees.length > 0 ? task.assignees[0].user_id : null
 
-      // Tính quality_score trung bình có trọng số (ưu tiên)
-      let totalScore = 0,
-        totalWeight = 0
-      for (const r of userProjectReviews) {
-        let weight = 1
-        if (r.task.priority === 'high') weight = 2
-        else if (r.task.priority === 'medium') weight = 1.5
-        totalScore += r.quality_score * weight
-        totalWeight += weight
+      let avgQualityScore: number | null = null
+      if (taskOwner) {
+        // 4. Lấy toàn bộ review của task owner này cho project (PerformanceData)
+        const userProjectReviews = await this.taskRepository.getUserProjectReviews({
+          user_id: taskOwner,
+          project_id: task.project_id,
+        })
+
+        // Tính quality_score trung bình có trọng số (ưu tiên)
+        let totalScore = 0,
+          totalWeight = 0
+        for (const r of userProjectReviews) {
+          let weight = 1
+          if (r.task.priority === 'high') weight = 2
+          else if (r.task.priority === 'medium') weight = 1.5
+          totalScore += r.quality_score * weight
+          totalWeight += weight
+        }
+        avgQualityScore = totalWeight ? totalScore / totalWeight : null
       }
-      const avgQualityScore = totalWeight ? totalScore / totalWeight : null
 
-      // 4. Upsert PerformanceData
-      await this.taskRepository.upsertPerformanceData({
-        user_id: body.rejected_by,
-        project_id: task.project_id,
-        working_hours: task.time_spent_in_minutes || 0,
-        task_completed: 1,
-        quality_score: avgQualityScore,
-      })
+      if (taskOwner) {
+        // 4. Upsert PerformanceData
+        await this.taskRepository.upsertPerformanceData({
+          user_id: taskOwner,
+          project_id: task.project_id,
+          working_hours: task.time_spent_in_minutes || 0,
+          task_completed: 1,
+          quality_score: avgQualityScore,
+        })
 
-      // 5. Lấy toàn bộ review của user này (OverallPerformance)
-      const userAllReviews = await this.taskRepository.getUserAllReviews(body.rejected_by)
-      let totalScoreAll = 0,
-        totalWeightAll = 0
-      for (const r of userAllReviews) {
-        let weight = 1
-        if (r.task.priority === 'high') weight = 2
-        else if (r.task.priority === 'medium') weight = 1.5
-        totalScoreAll += r.quality_score * weight
-        totalWeightAll += weight
+        // 5. Lấy toàn bộ review của user này (OverallPerformance)
+        const userAllReviews = await this.taskRepository.getUserAllReviews(taskOwner)
+        let totalScoreAll = 0,
+          totalWeightAll = 0
+        for (const r of userAllReviews) {
+          let weight = 1
+          if (r.task.priority === 'high') weight = 2
+          else if (r.task.priority === 'medium') weight = 1.5
+          totalScoreAll += r.quality_score * weight
+          totalWeightAll += weight
+        }
+        const avgQualityScoreAll = totalWeightAll ? totalScoreAll / totalWeightAll : null
+
+        // 6. Upsert OverallPerformance
+        await this.taskRepository.upsertOverallPerformance({
+          user_id: taskOwner,
+          working_hours: task.time_spent_in_minutes || 0,
+          task_completed: 1,
+          quality_score: avgQualityScoreAll,
+        })
       }
-      const avgQualityScoreAll = totalWeightAll ? totalScoreAll / totalWeightAll : null
-
-      // 6. Upsert OverallPerformance
-      await this.taskRepository.upsertOverallPerformance({
-        user_id: body.rejected_by,
-        working_hours: task.time_spent_in_minutes || 0,
-        task_completed: 1,
-        quality_score: avgQualityScoreAll,
-      })
 
       return SuccessResponse('Task rejected and performance updated', rejection)
     } catch (error) {
@@ -476,9 +504,7 @@ export class TaskService {
               project_name: result.task.project.name,
               due_date: dueDateString,
             })
-            this.logger.log(`Task assignment email sent to ${assignee.user.email}`)
           } catch (emailError) {
-            this.logger.error(`Failed to send task assignment email to ${assignee.user.email}: ${emailError.message}`)
             // Continue with other emails even if one fails
           }
         }
@@ -495,13 +521,32 @@ export class TaskService {
       throw error
     }
   }
-  async getMyTasks(userId: string) {
+  async getMyTasks(projectId: string, userId: string) {
     try {
-      const result = await this.taskRepository.getMyTasks(userId)
+      const result = await this.taskRepository.getMyTasks(projectId, userId)
       return SuccessResponse('My Tasks retrieved successfully', result)
     } catch (error) {
       this.logger.error(error.message)
       throw error
+    }
+  }
+
+  private async checkAndUpdateProjectStatus(projectId: string) {
+    try {
+      // Lấy tất cả tasks của project
+      const tasks = await this.taskRepository.getTasksByProjectId(projectId)
+
+      // Kiểm tra xem tất cả tasks có status là completed hoặc feedbacked không
+      const allTasksCompleted = tasks.every(
+        (task) => task.status === TaskStatus.completed || task.status === TaskStatus.feedbacked,
+      )
+
+      // Nếu tất cả tasks đã hoàn thành thì update project status thành completed
+      if (allTasksCompleted && tasks.length > 0) {
+        await this.taskRepository.updateProjectStatus(projectId, ProjectStatus.completed)
+      }
+    } catch (error) {
+      // Không throw error để không làm gián đoạn flow chính
     }
   }
 }
